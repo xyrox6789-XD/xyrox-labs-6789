@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Daily Focus & Habit Dashboard</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono for crisp numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Configure Tailwind theme defaults -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            stone: {
+              50: '#fafaf9',
+              100: '#f5f5f4',
+              200: '#e7e5e4',
+              300: '#d6d3d1',
+              400: '#a8a29e',
+              500: '#78716c',
+              600: '#57534e',
+              700: '#44403c',
+              800: '#292524',
+              900: '#1c1917',
+              950: '#0c0a09',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Smooth transitions and iPad touch optimizations */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Circular timer progress transition */
+    .timer-ring-circle {
+      transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    /* Custom subtle scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(168, 162, 158, 0.35);
+      border-radius: 9999px;
+    }
+    /* Checkbox animation */
+    .task-item-enter {
+      animation: fadeSlideIn 0.2s ease-out forwards;
+    }
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-full bg-stone-100 text-stone-800 dark:bg-stone-950 dark:text-stone-100 transition-colors duration-300 selection:bg-emerald-500/20">
+
+  <!-- Main Container: Responsive padding & max-width tailored for iPad & Desktop -->
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 flex flex-col min-h-screen justify-between">
+
+    <!-- ================= TOP BAR ================= -->
+    <header class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-stone-200/80 dark:border-stone-800/80">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 flex items-center justify-center shadow-sm">
+          <!-- Minimalist Sun/Focus Icon -->
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"></path>
+          </svg>
+        </div>
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500 block">Daily Workspace</span>
+          <p id="currentDateDisplay" class="text-sm font-medium text-stone-600 dark:text-stone-300">Loading date...</p>
+        </div>
+      </div>
+
+      <!-- Top Action Controls (Touch-friendly buttons for iPad) -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- 12h / 24h Clock Toggle -->
+        <button id="clockFormatBtn" type="button"
+          class="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/80 active:scale-95 transition-all shadow-sm"
+          title="Toggle 12h / 24h clock">
+          12H
+        </button>
+
+        <!-- Sound Effect Toggle -->
+        <button id="soundToggleBtn" type="button"
+          class="p-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/80 active:scale-95 transition-all shadow-sm"
+          aria-label="Toggle timer chime" title="Toggle timer chime">
+          <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14" />
+          </svg>
+          <svg id="soundOffIcon" class="w-4 h-4 hidden text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" />
+          </svg>
+        </button>
+
+        <!-- iPad Deploy Guide Modal Trigger -->
+        <button id="openGuideBtn" type="button"
+          class="px-3.5 py-2.5 rounded-xl text-xs font-medium bg-emerald-600/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>iPad Deploy Guide</span>
+        </button>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" type="button"
+          class="p-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800/80 active:scale-95 transition-all shadow-sm"
+          aria-label="Toggle color theme">
+          <!-- Sun icon (shown in dark mode) -->
+          <svg id="sunIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path stroke-linecap="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg id="moonIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= HERO: LIVE CLOCK & DYNAMIC GREETING ================= -->
+    <section class="my-6 sm:my-8 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-8 border border-stone-200/80 dark:border-stone-800/90 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        
+        <!-- Left: Dynamic Greeting & Daily Main Focus -->
+        <div class="space-y-3 flex-1">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs font-medium">
+            <span id="greetingIcon">☀️</span>
+            <span id="greetingPeriodLabel">Morning Flow</span>
+          </div>
+
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+            <span id="greetingText">Good morning</span>,
+            <span id="userNameDisplay"
+              class="underline decoration-stone-300 dark:decoration-stone-700 decoration-dashed underline-offset-8 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              title="Tap to edit your name">Friend</span>
+          </h1>
+
+          <!-- Inline Name Editor (Hidden by default) -->
+          <div id="nameEditContainer" class="hidden items-center gap-2 max-w-xs pt-1">
+            <input id="userNameInput" type="text" maxlength="24" placeholder="Enter your name..."
+              class="w-full px-3 py-2 text-sm rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <button id="saveNameBtn" type="button"
+              class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900">
+              Save
+            </button>
+          </div>
+
+          <!-- Daily Main Intention Input -->
+          <div class="pt-2">
+            <label for="dailyIntentionInput" class="block text-xs font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5">
+              Today's Core Intention
+            </label>
+            <div class="relative flex items-center">
+              <input id="dailyIntentionInput" type="text"
+                placeholder="What is your #1 priority today? (Tap to type)"
+                class="w-full bg-stone-50 dark:bg-stone-800/60 border border-stone-200/80 dark:border-stone-800 rounded-2xl px-4 py-3 text-sm sm:text-base text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-stone-300 transition-all" />
+              <span id="intentionSavedBadge" class="absolute right-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium opacity-0 transition-opacity pointer-events-none">
+                Saved ✓
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live Digital Clock -->
+        <div class="flex flex-col items-start md:items-end justify-center border-t md:border-t-0 md:border-l border-stone-200/70 dark:border-stone-800 pt-4 md:pt-0 md:pl-8">
+          <div class="flex items-baseline gap-2">
+            <div id="liveClock" class="font-mono text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight tabular-nums text-stone-900 dark:text-stone-50">
+              00:00
+            </div>
+            <div class="flex flex-col">
+              <span id="liveSeconds" class="font-mono text-sm sm:text-base font-medium text-stone-400 dark:text-stone-500 tabular-nums">00</span>
+              <span id="liveAmPm" class="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">AM</span>
+            </div>
+          </div>
+          <p class="text-xs text-stone-400 dark:text-stone-500 mt-1.5">
+            Stay present, one block at a time.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= MAIN DASHBOARD GRID (iPad Side-by-Side Capable) ================= -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 flex-1 items-start">
+
+      <!-- LEFT COLUMN: POMODORO FOCUS TIMER (5 cols on large screens) -->
+      <section class="lg:col-span-5 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-7 border border-stone-200/80 dark:border-stone-800/90 shadow-sm flex flex-col items-center">
+        
+        <!-- Section Header -->
+        <div class="w-full flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="timerStatusDot"></span>
+            <h2 class="text-base font-semibold text-stone-800 dark:text-stone-100">Pomodoro Timer</h2>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-xs font-medium text-stone-600 dark:text-stone-300">
+            <span>🍅 Sessions today:</span>
+            <strong id="sessionCountDisplay" class="font-mono text-stone-900 dark:text-white">0</strong>
+          </div>
+        </div>
+
+        <!-- Mode Selector Pills -->
+        <div class="grid grid-cols-3 gap-1.5 p-1.5 w-full bg-stone-100 dark:bg-stone-800/80 rounded-2xl mb-6">
+          <button type="button" data-mode="focus"
+            class="timer-mode-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm">
+            Focus (25m)
+          </button>
+          <button type="button" data-mode="short"
+            class="timer-mode-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200">
+            Short (5m)
+          </button>
+          <button type="button" data-mode="long"
+            class="timer-mode-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200">
+            Long (15m)
+          </button>
+        </div>
+
+        <!-- Circular SVG Timer Ring -->
+        <div class="relative w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center my-2">
+          <svg class="w-full h-full" viewBox="0 0 220 220">
+            <!-- Background Track Circle -->
+            <circle
+              cx="110" cy="110" r="96"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="8"
+              class="text-stone-100 dark:text-stone-800"
+            />
+            <!-- Animated Foreground Progress Circle -->
+            <circle
+              id="timerProgressCircle"
+              cx="110" cy="110" r="96"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="8"
+              stroke-linecap="round"
+              stroke-dasharray="603.18"
+              stroke-dashoffset="0"
+              class="timer-ring-circle text-stone-900 dark:text-emerald-400"
+            />
+          </svg>
+
+          <!-- Center Countdown Readout -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span id="timerModeBadge" class="text-xs font-medium uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1">
+              Deep Focus
+            </span>
+            <div id="timerDisplay" class="font-mono text-5xl sm:text-6xl font-semibold tracking-tight tabular-nums text-stone-900 dark:text-stone-50">
+              25:00
+            </div>
+
+            <!-- Subtle +/- 1 min adjusters when paused -->
+            <div id="timerAdjustControls" class="flex items-center gap-3 mt-3">
+              <button id="minusMinBtn" type="button"
+                class="px-2.5 py-1 rounded-lg text-xs font-mono bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-95 transition"
+                title="Subtract 1 minute">
+                -1m
+              </button>
+              <button id="plusMinBtn" type="button"
+                class="px-2.5 py-1 rounded-lg text-xs font-mono bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-95 transition"
+                title="Add 1 minute">
+                +1m
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Timer Controls: Start, Pause, Reset -->
+        <div class="grid grid-cols-3 gap-3 w-full mt-6">
+          <button id="startTimerBtn" type="button"
+            class="py-3.5 px-4 rounded-2xl font-medium text-sm bg-stone-900 dark:bg-emerald-500 text-white dark:text-stone-950 hover:opacity-95 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span>Start</span>
+          </button>
+
+          <button id="pauseTimerBtn" type="button" disabled
+            class="py-3.5 px-4 rounded-2xl font-medium text-sm bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-200 hover:bg-stone-300 dark:hover:bg-stone-700 disabled:opacity-40 disabled:pointer-events-none active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <span>Pause</span>
+          </button>
+
+          <button id="resetTimerBtn" type="button"
+            class="py-3.5 px-4 rounded-2xl font-medium text-sm bg-stone-100 dark:bg-stone-800/60 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-stone-700/80 hover:bg-stone-200/70 dark:hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reset</span>
+          </button>
+        </div>
+
+        <!-- Timer Status Notification Banner -->
+        <p id="timerNotification" class="text-xs text-center text-stone-400 dark:text-stone-500 mt-4 min-h-[1.25rem]">
+          Ready when you are. Tap Start to begin a focus block.
+        </p>
+      </section>
+
+      <!-- RIGHT COLUMN: HABITS & QUICK TO-DO CHECKLIST (7 cols on large screens) -->
+      <section class="lg:col-span-7 bg-white dark:bg-stone-900 rounded-3xl p-6 sm:p-7 border border-stone-200/80 dark:border-stone-800/90 shadow-sm flex flex-col">
+        
+        <!-- Header & Progress Counter -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-stone-800 dark:text-stone-100">Daily Habits & Tasks</h2>
+            <p class="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
+              Automatically saved to your browser via <code class="font-mono">localStorage</code>
+            </p>
+          </div>
+          <div class="text-right">
+            <span id="progressText" class="text-xs font-semibold text-stone-700 dark:text-stone-300 font-mono">0 / 0 completed (0%)</span>
+          </div>
+        </div>
+
+        <!-- Visual Progress Bar -->
+        <div class="w-full h-2 bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden mb-6">
+          <div id="progressBarFill" class="h-full bg-emerald-500 transition-all duration-300 rounded-full" style="width: 0%"></div>
+        </div>
+
+        <!-- Add New Item Form -->
+        <form id="addTaskForm" class="flex flex-col sm:flex-row gap-2.5 mb-5">
+          <div class="relative flex-1">
+            <input id="newTaskInput" type="text" maxlength="100" required
+              placeholder="Add a daily habit or quick task..."
+              class="w-full pl-4 pr-4 py-3.5 rounded-2xl bg-stone-50 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700/80 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-emerald-400 transition-all" />
+          </div>
+
+          <div class="flex gap-2">
+            <!-- Category Selector: Habit vs Task -->
+            <select id="newTaskType"
+              class="px-3.5 py-3.5 rounded-2xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700/80 text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-200 focus:outline-none">
+              <option value="habit">🔄 Daily Habit</option>
+              <option value="task">⚡ Quick Task</option>
+            </select>
+
+            <!-- Submit Button -->
+            <button type="submit"
+              class="px-5 py-3.5 rounded-2xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-medium text-sm hover:opacity-95 active:scale-95 transition-all shadow-sm whitespace-nowrap">
+              + Add
+            </button>
+          </div>
+        </form>
+
+        <!-- Filter Tabs & Clear Completed Action -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-stone-100 dark:border-stone-800">
+          <div class="flex items-center gap-1 bg-stone-100 dark:bg-stone-800/80 p-1 rounded-xl">
+            <button type="button" data-filter="all"
+              class="task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm transition-all">
+              All
+            </button>
+            <button type="button" data-filter="habit"
+              class="task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-all">
+              Habits
+            </button>
+            <button type="button" data-filter="task"
+              class="task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-all">
+              Tasks
+            </button>
+            <button type="button" data-filter="active"
+              class="task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-all">
+              Remaining
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="uncheckHabitsBtn" type="button"
+              class="text-xs font-medium text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"
+              title="Uncheck all habits for a fresh day">
+              Reset Habits
+            </button>
+            <button id="clearCompletedBtn" type="button"
+              class="text-xs font-medium text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
+              Clear Done Tasks
+            </button>
+          </div>
+        </div>
+
+        <!-- Checklist Items List -->
+        <ul id="taskListContainer" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+          <!-- Populated dynamically via JavaScript -->
+        </ul>
+
+        <!-- Empty State -->
+        <div id="emptyTaskState" class="hidden py-12 text-center">
+          <div class="w-12 h-12 rounded-2xl bg-stone-100 dark:bg-stone-800 mx-auto flex items-center justify-center text-xl mb-3">
+            🌱
+          </div>
+          <p class="text-sm font-medium text-stone-600 dark:text-stone-300">Your list is clear</p>
+          <p class="text-xs text-stone-400 dark:text-stone-500 mt-1">Add a daily habit or a focus task above to get started.</p>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="mt-10 pt-6 border-t border-stone-200/60 dark:border-stone-800/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-400 dark:text-stone-500">
+      <p>Minimalist Daily Focus &amp; Habit Dashboard • Built &amp; Deployed from iPad</p>
+      <p>All data stored locally on your device</p>
+    </footer>
+
+  </div>
+
+  <!-- ================= IPAD DEPLOYMENT GUIDE MODAL ================= -->
+  <div id="deployGuideModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-stone-950/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-lg">🚀</span>
+          <h3 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+            Easy iPad Deployment &amp; Future Upgrades Guide
+          </h3>
+        </div>
+        <button id="closeGuideBtn" type="button"
+          class="p-2 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-5 text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
+        <div class="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/70 dark:border-stone-800">
+          <p class="font-semibold text-stone-900 dark:text-stone-100 mb-1">Step 1: Create Your File on GitHub (Easiest Way)</p>
+          <ol class="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
+            <li>Inside your <strong>DAILY-FOCUS-DASHBOARD</strong> repo on GitHub, look near the top right (next to the green <strong>Code</strong> button) and tap <strong>Add file</strong> (or the <strong>+</strong> icon) → <strong>Create new file</strong>.</li>
+            <li>In the <strong>"Name your file..."</strong> box at the top, type <code class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono text-xs">index.html</code> (make sure the <code class="font-mono">i</code> is lowercase!).</li>
+            <li>Tap inside the big editor box below and <strong>Paste</strong> the code you copied.</li>
+            <li>Tap the green <strong>Commit changes...</strong> button at the top right, then tap <strong>Commit changes</strong> in the pop-up.</li>
+          </ol>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/70 dark:border-stone-800">
+          <p class="font-semibold text-stone-900 dark:text-stone-100 mb-1">Step 2: Put It Live on Vercel</p>
+          <ol class="list-decimal list-inside space-y-1.5 text-xs sm:text-sm">
+            <li>Open a new Safari tab and go to <strong>vercel.com</strong>.</li>
+            <li>Tap <strong>Sign Up</strong> or <strong>Log In</strong> and choose <strong>Continue with GitHub</strong>.</li>
+            <li>Tap <strong>Add New... → Project</strong>, find <strong>DAILY-FOCUS-DASHBOARD</strong>, and tap <strong>Import</strong>.</li>
+            <li>Tap the big <strong>Deploy</strong> button and wait ~10 seconds for your live website link!</li>
+          </ol>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+          <p class="font-semibold text-emerald-800 dark:text-emerald-300 mb-1">Step 3: How to Upgrade in the Future ✨</p>
+          <p class="text-xs sm:text-sm">
+            Once connected, Vercel watches your GitHub repo automatically. Anytime you want to add new features later, just open <code class="font-mono text-xs">index.html</code> on GitHub (or in <code class="font-mono text-xs">github.dev</code>), paste the upgraded code, and tap <strong>Commit changes</strong>. Your live Vercel site will update itself automatically in 10 seconds!
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-stone-200 dark:border-stone-800 flex justify-end">
+        <button id="doneGuideBtn" type="button"
+          class="px-5 py-2.5 rounded-xl bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-semibold">
+          Got it!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= APPLICATION JAVASCRIPT ================= -->
+  <script>
+    /********************************************************************
+     * 1. STORAGE KEYS & APPLICATION STATE
+     ********************************************************************/
+    const STORAGE_KEYS = {
+      THEME: 'focus_dash_theme_v1',
+      USER_NAME: 'focus_dash_username_v1',
+      CLOCK_24H: 'focus_dash_clock24h_v1',
+      SOUND_ENABLED: 'focus_dash_sound_v1',
+      INTENTION: 'focus_dash_intention_v1',
+      TASKS: 'focus_dash_tasks_v1',
+      POMODORO_SESSIONS: 'focus_dash_sessions_v1',
+      LAST_ACTIVE_DATE: 'focus_dash_last_date_v1'
+    };
+
+    // Default starter habits and tasks for first-time visitors
+    const DEFAULT_ITEMS = [
+      { id: 'h-1', text: 'Drink a glass of water after waking up', type: 'habit', completed: false, streak: 3 },
+      { id: 'h-2', text: 'Complete one 25-minute deep focus block', type: 'habit', completed: false, streak: 5 },
+      { id: 'h-3', text: '10 minutes of stretching or movement', type: 'habit', completed: false, streak: 2 },
+      { id: 't-1', text: 'Deploy my first dashboard to Vercel from iPad 🚀', type: 'task', completed: false, streak: 0 }
+    ];
+
+    // Timer durations in seconds
+    const TIMER_MODES = {
+      focus: { label: 'Deep Focus', minutes: 25 },
+      short: { label: 'Short Break', minutes: 5 },
+      long: { label: 'Long Break', minutes: 15 }
+    };
+
+    const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 96; // r = 96 -> ~603.185
+
+    let state = {
+      use24Hour: false,
+      soundEnabled: true,
+      userName: 'Friend',
+      dailyIntention: '',
+      tasks: [],
+      activeFilter: 'all',
+      sessionsToday: 0,
+      timer: {
+        mode: 'focus',
+        totalSeconds: 25 * 60,
+        remainingSeconds: 25 * 60,
+        isRunning: false,
+        intervalId: null
+      }
+    };
+
+    /********************************************************************
+     * 2. LOCAL STORAGE HELPERS & DAILY RESET CHECK
+     ********************************************************************/
+    function getTodayDateString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function loadStateFromStorage() {
+      try {
+        // Theme preference
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+
+        // User preferences
+        state.userName = localStorage.getItem(STORAGE_KEYS.USER_NAME) || 'Friend';
+        state.use24Hour = localStorage.getItem(STORAGE_KEYS.CLOCK_24H) === 'true';
+        const savedSound = localStorage.getItem(STORAGE_KEYS.SOUND_ENABLED);
+        state.soundEnabled = savedSound === null ? true : savedSound === 'true';
+        state.dailyIntention = localStorage.getItem(STORAGE_KEYS.INTENTION) || '';
+
+        // Tasks & Habits
+        const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
+        state.tasks = savedTasks ? JSON.parse(savedTasks) : DEFAULT_ITEMS;
+
+        // Sessions count
+        const savedSessions = parseInt(localStorage.getItem(STORAGE_KEYS.POMODORO_SESSIONS), 10);
+        state.sessionsToday = isNaN(savedSessions) ? 0 : savedSessions;
+
+        // Check if it's a new calendar day -> automatically uncheck daily habits & reset today's session counter
+        const todayStr = getTodayDateString();
+        const lastDate = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVE_DATE);
+
+        if (lastDate && lastDate !== todayStr) {
+          state.tasks = state.tasks.map(item => {
+            if (item.type === 'habit') {
+              return { ...item, completed: false };
+            }
+            return item;
+          });
+          state.sessionsToday = 0;
+          saveTasksToStorage();
+          localStorage.setItem(STORAGE_KEYS.POMODORO_SESSIONS, '0');
+        }
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVE_DATE, todayStr);
+      } catch (err) {
+        console.warn('localStorage access error:', err);
+        state.tasks = DEFAULT_ITEMS;
+      }
+    }
+
+    function saveTasksToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(state.tasks));
+      } catch (err) {
+        console.warn('Could not save tasks to localStorage:', err);
+      }
+    }
+
+    /********************************************************************
+     * 3. LIVE DIGITAL CLOCK & DYNAMIC GREETING
+     ********************************************************************/
+    function updateClockAndGreeting() {
+      const now = new Date();
+      const hours24 = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+
+      // Format Date (e.g., "Saturday, November 7")
+      const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+      document.getElementById('currentDateDisplay').textContent = now.toLocaleDateString(undefined, dateOptions);
+
+      // Format Hours
+      const amPmEl = document.getElementById('liveAmPm');
+      let displayHours = hours24;
+
+      if (state.use24Hour) {
+        displayHours = String(hours24).padStart(2, '0');
+        amPmEl.classList.add('hidden');
+      } else {
+        const period = hours24 >= 12 ? 'PM' : 'AM';
+        displayHours = hours24 % 12 || 12;
+        amPmEl.textContent = period;
+        amPmEl.classList.remove('hidden');
+      }
+
+      document.getElementById('liveClock').textContent = `${displayHours}:${minutes}`;
+      document.getElementById('liveSeconds').textContent = seconds;
+
+      // Dynamic Time-of-Day Greeting
+      let greeting = 'Good evening';
+      let icon = '🌙';
+      let periodLabel = 'Evening Wind-down';
+
+      if (hours24 >= 5 && hours24 < 12) {
+        greeting = 'Good morning';
+        icon = '☀️';
+        periodLabel = 'Morning Flow';
+      } else if (hours24 >= 12 && hours24 < 17) {
+        greeting = 'Good afternoon';
+        icon = '🌤️';
+        periodLabel = 'Afternoon Focus';
+      } else if (hours24 >= 17 && hours24 < 22) {
+        greeting = 'Good evening';
+        icon = '🌆';
+        periodLabel = 'Evening Reflection';
+      } else {
+        greeting = 'Good night';
+        icon = '✨';
+        periodLabel = 'Late Night Calm';
+      }
+
+      document.getElementById('greetingText').textContent = greeting;
+      document.getElementById('greetingIcon').textContent = icon;
+      document.getElementById('greetingPeriodLabel').textContent = periodLabel;
+    }
+
+    /********************************************************************
+     * 4. WEB AUDIO SYNTHESIZER CHIME (Zero External Audio Dependencies)
+     ********************************************************************/
+    function playZenChime() {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+
+        // Play a warm two-note harmonic bell chime (C5 -> G5)
+        const notes = [523.25, 783.99];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.18);
+
+          gain.gain.setValueAtTime(0.001, ctx.currentTime + idx * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + idx * 0.18 + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.18 + 1.4);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(ctx.currentTime + idx * 0.18);
+          osc.stop(ctx.currentTime + idx * 0.18 + 1.45);
+        });
+      } catch (e) {
+        // Ignore audio context restrictions if not interacted yet
+      }
+    }
+
+    /********************************************************************
+     * 5. POMODORO TIMER ENGINE
+     ********************************************************************/
+    function renderTimerUI() {
+      const { remainingSeconds, totalSeconds, isRunning, mode } = state.timer;
+      const mins = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+      const secs = String(remainingSeconds % 60).padStart(2, '0');
+      const formatted = `${mins}:${secs}`;
+
+      document.getElementById('timerDisplay').textContent = formatted;
+      document.getElementById('timerModeBadge').textContent = TIMER_MODES[mode].label;
+      document.getElementById('sessionCountDisplay').textContent = state.sessionsToday;
+
+      // Update SVG Circular Ring
+      const progressCircle = document.getElementById('timerProgressCircle');
+      const progressFraction = totalSeconds > 0 ? (totalSeconds - remainingSeconds) / totalSeconds : 0;
+      const offset = CIRCLE_CIRCUMFERENCE * progressFraction;
+      progressCircle.style.strokeDashoffset = offset;
+
+      // Update Page Title while running so user can see countdown in Safari tab
+      if (isRunning) {
+        document.title = `(${formatted}) ${TIMER_MODES[mode].label} — Daily Focus`;
+      } else {
+        document.title = 'Daily Focus & Habit Dashboard';
+      }
+
+      // Toggle Button States
+      const startBtn = document.getElementById('startTimerBtn');
+      const pauseBtn = document.getElementById('pauseTimerBtn');
+      const adjustControls = document.getElementById('timerAdjustControls');
+
+      startBtn.disabled = isRunning;
+      startBtn.classList.toggle('opacity-50', isRunning);
+      startBtn.classList.toggle('pointer-events-none', isRunning);
+
+      pauseBtn.disabled = !isRunning;
+      adjustControls.classList.toggle('invisible', isRunning);
+
+      // Update mode selector pill styling
+      document.querySelectorAll('.timer-mode-btn').forEach(btn => {
+        const isCurrent = btn.getAttribute('data-mode') === mode;
+        btn.className = isCurrent
+          ? 'timer-mode-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm'
+          : 'timer-mode-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200';
+      });
+    }
+
+    function startTimer() {
+      if (state.timer.isRunning) return;
+      state.timer.isRunning = true;
+      document.getElementById('timerNotification').textContent = 'Focus session in progress. You got this!';
+      renderTimerUI();
+
+      state.timer.intervalId = setInterval(() => {
+        if (state.timer.remainingSeconds > 0) {
+          state.timer.remainingSeconds -= 1;
+          renderTimerUI();
+        } else {
+          handleTimerComplete();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (!state.timer.isRunning) return;
+      clearInterval(state.timer.intervalId);
+      state.timer.intervalId = null;
+      state.timer.isRunning = false;
+      document.getElementById('timerNotification').textContent = 'Timer paused. Take a breath or resume whenever ready.';
+      renderTimerUI();
+    }
+
+    function resetTimer() {
+      clearInterval(state.timer.intervalId);
+      state.timer.intervalId = null;
+      state.timer.isRunning = false;
+      const defaultSecs = TIMER_MODES[state.timer.mode].minutes * 60;
+      state.timer.totalSeconds = defaultSecs;
+      state.timer.remainingSeconds = defaultSecs;
+      document.getElementById('timerNotification').textContent = 'Timer reset to default duration.';
+      renderTimerUI();
+    }
+
+    function switchTimerMode(newMode) {
+      if (!TIMER_MODES[newMode]) return;
+      clearInterval(state.timer.intervalId);
+      state.timer.intervalId = null;
+      state.timer.isRunning = false;
+      state.timer.mode = newMode;
+      const secs = TIMER_MODES[newMode].minutes * 60;
+      state.timer.totalSeconds = secs;
+      state.timer.remainingSeconds = secs;
+      document.getElementById('timerNotification').textContent = `Switched to ${TIMER_MODES[newMode].label}.`;
+      renderTimerUI();
+    }
+
+    function adjustTimerMinutes(deltaMinutes) {
+      if (state.timer.isRunning) return;
+      const newSeconds = Math.max(60, Math.min(90 * 60, state.timer.remainingSeconds + deltaMinutes * 60));
+      state.timer.totalSeconds = newSeconds;
+      state.timer.remainingSeconds = newSeconds;
+      renderTimerUI();
+    }
+
+    function handleTimerComplete() {
+      clearInterval(state.timer.intervalId);
+      state.timer.intervalId = null;
+      state.timer.isRunning = false;
+
+      playZenChime();
+
+      if (state.timer.mode === 'focus') {
+        state.sessionsToday += 1;
+        try {
+          localStorage.setItem(STORAGE_KEYS.POMODORO_SESSIONS, String(state.sessionsToday));
+        } catch (e) {}
+        document.getElementById('timerNotification').textContent = '🎉 Focus block complete! Time for a well-earned break.';
+      } else {
+        document.getElementById('timerNotification').textContent = '✨ Break finished! Ready for your next focus block?';
+      }
+
+      // Reset remaining time to full for the current mode
+      state.timer.remainingSeconds = state.timer.totalSeconds;
+      renderTimerUI();
+    }
+
+    /********************************************************************
+     * 6. HABIT & TO-DO CHECKLIST ENGINE
+     ********************************************************************/
+    function renderTasks() {
+      const listEl = document.getElementById('taskListContainer');
+      const emptyEl = document.getElementById('emptyTaskState');
+
+      // Calculate overall completion stats across all items
+      const totalCount = state.tasks.length;
+      const completedCount = state.tasks.filter(t => t.completed).length;
+      const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      document.getElementById('progressText').textContent = `${completedCount} / ${totalCount} completed (${percent}%)`;
+      document.getElementById('progressBarFill').style.width = `${percent}%`;
+
+      // Filter items for display
+      const filteredTasks = state.tasks.filter(item => {
+        if (state.activeFilter === 'habit') return item.type === 'habit';
+        if (state.activeFilter === 'task') return item.type === 'task';
+        if (state.activeFilter === 'active') return !item.completed;
+        return true;
+      });
+
+      listEl.innerHTML = '';
+
+      if (filteredTasks.length === 0) {
+        emptyEl.classList.remove('hidden');
+      } else {
+        emptyEl.classList.add('hidden');
+
+        filteredTasks.forEach(item => {
+          const li = document.createElement('li');
+          li.className = `task-item-enter group flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-all ${
+            item.completed
+              ? 'bg-stone-50/70 dark:bg-stone-800/30 border-stone-200/50 dark:border-stone-800/50'
+              : 'bg-stone-50 dark:bg-stone-800/60 border-stone-200/90 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
+          }`;
+
+          // Left side: Checkbox + Label + Badge
+          const leftBtn = document.createElement('button');
+          leftBtn.type = 'button';
+          leftBtn.className = 'flex items-center gap-3.5 flex-1 text-left focus:outline-none';
+          leftBtn.addEventListener('click', () => toggleTaskCompletion(item.id));
+
+          const checkbox = document.createElement('div');
+          checkbox.className = `w-6 h-6 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
+            item.completed
+              ? 'bg-emerald-500 text-white border-emerald-500'
+              : 'bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 group-hover:border-emerald-500'
+          }`;
+          checkbox.innerHTML = item.completed
+            ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`
+            : '';
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 flex-1';
+
+          const titleSpan = document.createElement('span');
+          titleSpan.className = `text-sm font-medium transition-all ${
+            item.completed
+              ? 'line-through text-stone-400 dark:text-stone-500'
+              : 'text-stone-800 dark:text-stone-100'
+          }`;
+          titleSpan.textContent = item.text;
+
+          const badge = document.createElement('span');
+          if (item.type === 'habit') {
+            badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 w-fit';
+            badge.textContent = `🔥 ${item.streak || 0}d habit`;
+          } else {
+            badge.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-stone-200/80 dark:bg-stone-700/70 text-stone-600 dark:text-stone-300 w-fit';
+            badge.textContent = 'Task';
+          }
+
+          textWrap.appendChild(titleSpan);
+          textWrap.appendChild(badge);
+          leftBtn.appendChild(checkbox);
+          leftBtn.appendChild(textWrap);
+
+          // Right side: Delete Button
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'p-2 rounded-xl text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-stone-200/50 dark:hover:bg-stone-700/50 transition-colors';
+          deleteBtn.title = 'Delete item';
+          deleteBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          `;
+          deleteBtn.addEventListener('click', () => deleteTask(item.id));
+
+          li.appendChild(leftBtn);
+          li.appendChild(deleteBtn);
+          listEl.appendChild(li);
+        });
+      }
+    }
+
+    function addNewTask(text, type) {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const newItem = {
+        id: 'item-' + Date.now(),
+        text: trimmed,
+        type: type === 'habit' ? 'habit' : 'task',
+        completed: false,
+        streak: 0
+      };
+
+      state.tasks.unshift(newItem);
+      saveTasksToStorage();
+      renderTasks();
+    }
+
+    function toggleTaskCompletion(id) {
+      state.tasks = state.tasks.map(item => {
+        if (item.id === id) {
+          const nextCompleted = !item.completed;
+          let nextStreak = item.streak || 0;
+          if (item.type === 'habit') {
+            nextStreak = nextCompleted ? nextStreak + 1 : Math.max(0, nextStreak - 1);
+          }
+          return { ...item, completed: nextCompleted, streak: nextStreak };
+        }
+        return item;
+      });
+      saveTasksToStorage();
+      renderTasks();
+    }
+
+    function deleteTask(id) {
+      state.tasks = state.tasks.filter(item => item.id !== id);
+      saveTasksToStorage();
+      renderTasks();
+    }
+
+    function clearCompletedTasks() {
+      // Removes completed one-off tasks while preserving recurring habits
+      state.tasks = state.tasks.filter(item => !(item.type === 'task' && item.completed));
+      saveTasksToStorage();
+      renderTasks();
+    }
+
+    function uncheckAllHabits() {
+      state.tasks = state.tasks.map(item =>
+        item.type === 'habit' ? { ...item, completed: false } : item
+      );
+      saveTasksToStorage();
+      renderTasks();
+    }
+
+    /********************************************************************
+     * 7. UI EVENT LISTENERS & INITIALIZATION
+     ********************************************************************/
+    function syncHeaderControlsUI() {
+      // Theme icons
+      const isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('sunIcon').classList.toggle('hidden', !isDark);
+      document.getElementById('moonIcon').classList.toggle('hidden', isDark);
+
+      // Clock 12h/24h button label
+      document.getElementById('clockFormatBtn').textContent = state.use24Hour ? '24H' : '12H';
+
+      // Sound icon
+      document.getElementById('soundOnIcon').classList.toggle('hidden', !state.soundEnabled);
+      document.getElementById('soundOffIcon').classList.toggle('hidden', state.soundEnabled);
+
+      // User Name & Daily Intention
+      document.getElementById('userNameDisplay').textContent = state.userName;
+      document.getElementById('dailyIntentionInput').value = state.dailyIntention;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Load persisted data
+      loadStateFromStorage();
+      syncHeaderControlsUI();
+
+      // 2. Start Live Clock
+      updateClockAndGreeting();
+      setInterval(updateClockAndGreeting, 1000);
+
+      // 3. Render Pomodoro & Tasks
+      renderTimerUI();
+      renderTasks();
+
+      // 4. Theme Toggle
+      document.getElementById('themeToggleBtn').addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try {
+          localStorage.setItem(STORAGE_KEYS.THEME, isDark ? 'dark' : 'light');
+        } catch (e) {}
+        syncHeaderControlsUI();
+      });
+
+      // 5. Clock Format Toggle (12H / 24H)
+      document.getElementById('clockFormatBtn').addEventListener('click', () => {
+        state.use24Hour = !state.use24Hour;
+        try {
+          localStorage.setItem(STORAGE_KEYS.CLOCK_24H, String(state.use24Hour));
+        } catch (e) {}
+        syncHeaderControlsUI();
+        updateClockAndGreeting();
+      });
+
+      // 6. Sound Toggle
+      document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        try {
+          localStorage.setItem(STORAGE_KEYS.SOUND_ENABLED, String(state.soundEnabled));
+        } catch (e) {}
+        syncHeaderControlsUI();
+        if (state.soundEnabled) playZenChime();
+      });
+
+      // 7. Inline User Name Editing
+      const nameDisplay = document.getElementById('userNameDisplay');
+      const nameEditContainer = document.getElementById('nameEditContainer');
+      const nameInput = document.getElementById('userNameInput');
+      const saveNameBtn = document.getElementById('saveNameBtn');
+
+      function saveUserName() {
+        const val = nameInput.value.trim() || 'Friend';
+        state.userName = val;
+        nameDisplay.textContent = val;
+        nameEditContainer.classList.add('hidden');
+        nameEditContainer.classList.remove('flex');
+        try {
+          localStorage.setItem(STORAGE_KEYS.USER_NAME, val);
+        } catch (e) {}
+      }
+
+      nameDisplay.addEventListener('click', () => {
+        nameInput.value = state.userName;
+        nameEditContainer.classList.remove('hidden');
+        nameEditContainer.classList.add('flex');
+        nameInput.focus();
+      });
+
+      saveNameBtn.addEventListener('click', saveUserName);
+      nameInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') saveUserName();
+      });
+
+      // 8. Daily Intention Auto-Save
+      let intentionTimeout;
+      const intentionInput = document.getElementById('dailyIntentionInput');
+      const savedBadge = document.getElementById('intentionSavedBadge');
+
+      intentionInput.addEventListener('input', () => {
+        state.dailyIntention = intentionInput.value;
+        try {
+          localStorage.setItem(STORAGE_KEYS.INTENTION, state.dailyIntention);
+        } catch (e) {}
+        savedBadge.classList.remove('opacity-0');
+        clearTimeout(intentionTimeout);
+        intentionTimeout = setTimeout(() => {
+          savedBadge.classList.add('opacity-0');
+        }, 1200);
+      });
+
+      // 9. Pomodoro Timer Controls
+      document.getElementById('startTimerBtn').addEventListener('click', startTimer);
+      document.getElementById('pauseTimerBtn').addEventListener('click', pauseTimer);
+      document.getElementById('resetTimerBtn').addEventListener('click', resetTimer);
+      document.getElementById('minusMinBtn').addEventListener('click', () => adjustTimerMinutes(-1));
+      document.getElementById('plusMinBtn').addEventListener('click', () => adjustTimerMinutes(1));
+
+      document.querySelectorAll('.timer-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchTimerMode(btn.getAttribute('data-mode'));
+        });
+      });
+
+      // 10. Task & Habit Checklist Controls
+      document.getElementById('addTaskForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const inputEl = document.getElementById('newTaskInput');
+        const typeEl = document.getElementById('newTaskType');
+        addNewTask(inputEl.value, typeEl.value);
+        inputEl.value = '';
+      });
+
+      document.querySelectorAll('.task-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeFilter = btn.getAttribute('data-filter');
+          document.querySelectorAll('.task-filter-btn').forEach(b => {
+            const active = b.getAttribute('data-filter') === state.activeFilter;
+            b.className = active
+              ? 'task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm transition-all'
+              : 'task-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-all';
+          });
+          renderTasks();
+        });
+      });
+
+      document.getElementById('clearCompletedBtn').addEventListener('click', clearCompletedTasks);
+      document.getElementById('uncheckHabitsBtn').addEventListener('click', uncheckAllHabits);
+
+      // 11. iPad Deploy Guide Modal
+      const guideModal = document.getElementById('deployGuideModal');
+      const openGuide = () => {
+        guideModal.classList.remove('hidden');
+        guideModal.classList.add('flex');
+      };
+      const closeGuide = () => {
+        guideModal.classList.add('hidden');
+        guideModal.classList.remove('flex');
+      };
+
+      document.getElementById('openGuideBtn').addEventListener('click', openGuide);
+      document.getElementById('closeGuideBtn').addEventListener('click', closeGuide);
+      document.getElementById('doneGuideBtn').addEventListener('click', closeGuide);
+      guideModal.addEventListener('click', e => {
+        if (e.target === guideModal) closeGuide();
+      });
+    });
+  </script>
+</body>
+</html>
