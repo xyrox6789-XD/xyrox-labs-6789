@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>XYROX-UTILITIES | Global Chat</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- Three.js for 3D Background -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Global Master Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: { 
+            xyrox: { bg: '#0a0a0b', panel: 'rgba(17, 17, 19, 0.65)', border: 'rgba(255, 255, 255, 0.08)' } 
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="h-screen w-screen flex antialiased selection:bg-white/20">
+
+  <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
+  <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none opacity-30"></div>
+
+  <!-- ================= 2. LEFT SIDEBAR NAVIGATION ================= -->
+  <aside class="w-64 h-full z-20 flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl">
+    <div>
+      <div class="h-20 flex items-center px-6 border-b border-xyrox-border">
+        <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
+      </div>
+      
+      <nav class="p-4 space-y-2">
+        <a href="index.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          Dashboard
+        </a>
+        <a href="audio.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+          Audio Studio
+        </a>
+        <a href="calculator.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Calculator
+        </a>
+        <!-- Active Tab: Global Chat -->
+        <a href="chat.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all bg-white/10 text-white border border-white/10 shadow-sm">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+          Global Chat
+        </a>
+        <a href="ai.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          Xyrox AI
+        </a>
+      </nav>
+    </div>
+
+    <!-- Settings / Auth Footer -->
+    <div class="p-4 border-t border-xyrox-border">
+      <a href="settings.html" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all bg-black/20 hover:bg-white/5 border border-transparent hover:border-white/10 group">
+        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/5 group-hover:border-white/20 transition-all">
+          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        </div>
+        <div class="flex flex-col items-start leading-tight">
+          <span class="text-gray-200 font-medium text-xs" id="sidebarAuthName">Guest Mode</span>
+          <span class="text-[10px] text-gray-500 mt-0.5">Sign In via Google</span>
+        </div>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ================= 3. CHAT CONTENT ================= -->
+  <main class="flex-1 h-full flex flex-col relative z-10 p-8 md:p-12 animate-fade-in">
+    <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col h-full space-y-6">
+      
+      <!-- Top Banner: Discord Invite -->
+      <a href="https://discord.gg/crxjFeNtWG" target="_blank" class="w-full bg-[#5865F2]/10 border border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 transition-all rounded-2xl p-6 flex items-center justify-between group shadow-[0_0_20px_rgba(88,101,242,0.1)]">
+        <div class="flex items-center gap-5">
+          <div class="w-12 h-12 bg-[#5865F2] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white tracking-tight">Join the Official XYROX Server</h2>
+            <p class="text-sm text-[#5865F2] font-medium mt-0.5">discord.gg/crxjFeNtWG</p>
+          </div>
+        </div>
+        <div class="px-5 py-2.5 bg-white text-black font-semibold rounded-lg shadow-md group-hover:bg-gray-200 transition">Connect</div>
+      </a>
+
+      <!-- Main Web Chat Interface -->
+      <div class="flex-1 bg-xyrox-panel backdrop-blur-xl border border-xyrox-border rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <!-- Chat Header -->
+        <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+          <div>
+            <h3 class="text-white font-medium flex items-center gap-2">
+              <span class="text-gray-500 font-mono text-lg">#</span> xyrox-global
+            </h3>
+            <p class="text-xs text-gray-500">Live community platform. Requires Google Sign-In.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            <span class="text-xs text-gray-400 font-mono">System Online</span>
+          </div>
+        </div>
+
+        <!-- Chat History -->
+        <div id="chatBox" class="flex-1 overflow-y-auto p-6 space-y-5">
+          <!-- Pinned System Message -->
+          <div class="flex gap-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-blue-400">System</span>
+                <span class="text-xs text-gray-500 font-mono">Pinned</span>
+              </div>
+              <p class="text-sm text-gray-300 mt-1">Welcome to XYROX-UTILITIES. Please sign in via Google in Settings to send messages. Bad behavior will result in a ban.</p>
+            </div>
+          </div>
+
+          <!-- Dummy Message to show Founder Badge styling -->
+          <div class="flex gap-4">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-black flex items-center justify-center shrink-0 border border-white/10">
+              <span class="text-xs font-bold text-white">XY</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-white">xyrox6789</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-white text-black uppercase">Founder</span>
+                <span class="text-xs text-gray-500 font-mono">Today at 10:00 AM</span>
+              </div>
+              <p class="text-sm text-gray-300 mt-1">The chat architecture is ready. Firebase integration coming next.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area (Locked until Auth) -->
+        <div class="p-4 bg-black/20 border-t border-white/5">
+          <div id="chatInputContainer" class="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 opacity-50 cursor-not-allowed">
+            <input type="text" disabled placeholder="You must sign in via Google to chat..." class="w-full bg-transparent text-sm text-white focus:outline-none placeholder:text-gray-500" />
+            <button disabled class="text-gray-500 ml-2"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
+          </div>
+          <p class="text-center text-xs text-gray-500 mt-3">
+            Go to <a href="settings.html" class="text-white underline underline-offset-2 hover:text-gray-300">Settings</a> to connect your Google Account.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= 4. JAVASCRIPT LOGIC ================= -->
+  <script>
+    // --- 3D BACKGROUND ENGINE ---
+    function init3DBackground() {
+      const container = document.getElementById('webgl-container');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 15; camera.position.x = 8;
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const geometry = new THREE.SphereGeometry(6, 32, 32);
+      const material = new THREE.MeshBasicMaterial({ color: 0x444455, wireframe: true, transparent: true, opacity: 0.15 });
+      const globe = new THREE.Mesh(geometry, material);
+      scene.add(globe);
+
+      const animate = function () {
+        requestAnimationFrame(animate);
+        globe.rotation.y += 0.001; globe.rotation.x += 0.0005;
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+    init3DBackground();
+  </script>
+</body>
+</html>
