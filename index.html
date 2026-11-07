@@ -1,2180 +1,746 @@
 <!DOCTYPE html>
-<html lang="en" class="dark h-full">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>XYROX-UTILITIES — Engineered by xyrox6789</title>
+  <title>XYROX-UTILITIES</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Three.js for Real 3D Background -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Firebase Auth & Firestore (Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    // Placeholder for actual Firebase Config (User can fill this in the Settings Tab later)
+    let firebaseConfig = { apiKey: "", authDomain: "", projectId: "" };
+    
+    // Attach to window so our UI can access it
+    window.xyroxAuth = {
+      loginWithGoogle: () => {
+        // Fallback mock if Firebase isn't configured yet
+        if (!firebaseConfig.apiKey) {
+          window.mockGoogleLogin();
+          return;
+        }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).then((result) => {
+          window.handleAuthSuccess(result.user);
+        }).catch(console.error);
+      },
+      logout: () => {
+        if (!firebaseConfig.apiKey) {
+          window.handleAuthLogout();
+          return;
+        }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        signOut(auth).then(() => window.handleAuthLogout());
+      }
+    };
+  </script>
 
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            zinc: {
-              925: '#111113',
-              950: '#09090b'
-            }
-          }
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: { zinc: { 900: '#18181b', 950: '#09090b' } }
         }
       }
     };
   </script>
 
   <style>
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Inter', -apple-system, sans-serif; overflow-x: hidden; }
-    .tabular-nums { font-variant-numeric: tabular-nums; }
-
-    /* Vercel / Linear Glass Surface */
-    .xy-card {
-      background: rgba(255, 255, 255, 0.82);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(228, 228, 231, 0.85);
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #09090b; }
+    
+    /* Sleek Glass Panels */
+    .glass-panel {
+      background: rgba(24, 24, 27, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .dark .xy-card {
-      background: rgba(17, 17, 19, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    /* Subtle hover border glow */
-    .xy-card:hover {
-      border-color: rgba(161, 161, 170, 0.5);
-    }
-    .dark .xy-card:hover {
-      border-color: rgba(255, 255, 255, 0.16);
-    }
-
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    .glass-panel:hover { border-color: rgba(255, 255, 255, 0.1); }
+    
+    /* Clean Scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(113, 113, 122, 0.35); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-    /* Smooth View Transitions */
-    .workspace-section {
-      animation: xyFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    @keyframes xyFadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    /* Transitions */
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Input Resets */
+    input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   </style>
 </head>
+<body class="text-zinc-300 antialiased h-screen flex">
 
-<body class="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 relative">
+  <!-- ================= 3D BACKGROUND (THREE.JS) ================= -->
+  <div id="canvas-container" class="fixed inset-0 z-0 pointer-events-none opacity-60"></div>
 
-  <!-- ================= 3D ARCHITECTURAL PARTICLE-GRID CANVAS ================= -->
-  <canvas id="xyrox3dCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-70 dark:opacity-90"></canvas>
-
-  <!-- ================= TOP GLASS NAVIGATION BAR ================= -->
-  <header class="sticky top-0 z-30 border-b border-zinc-200/80 dark:border-white/10 bg-white/75 dark:bg-zinc-950/75 backdrop-blur-xl">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-      
-      <!-- Brand Identity -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-mono font-bold text-sm tracking-tighter shadow-sm">
-          XY
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm tracking-tight text-zinc-900 dark:text-white">XYROX-UTILITIES</span>
-            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-white/10 text-zinc-600 dark:text-zinc-300">v2.0</span>
-          </div>
-          <p id="topDateReadout" class="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">Initializing...</p>
-        </div>
+  <!-- ================= LEFT SIDEBAR NAVIGATION ================= -->
+  <aside class="w-64 h-full glass-panel z-20 flex flex-col justify-between border-r border-white/5 shrink-0 hidden md:flex">
+    <div>
+      <!-- Brand -->
+      <div class="h-20 flex items-center px-6 border-b border-white/5">
+        <h1 class="font-bold tracking-widest text-sm text-white uppercase">XYROX-UTILITIES</h1>
       </div>
 
-      <!-- Center Workspace Navigation Tabs (Scrollable on Mobile/iPad) -->
-      <nav class="flex items-center gap-1 overflow-x-auto py-1 px-1 rounded-xl bg-zinc-100/90 dark:bg-white/5 border border-zinc-200/60 dark:border-white/10 max-w-full">
-        <button type="button" data-tab="command" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm">
-          ⚡ Command
+      <!-- Nav Links -->
+      <nav class="p-4 space-y-1" id="desktopNav">
+        <button data-tab="command" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all bg-white/10 text-white">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          Command Center
         </button>
-        <button type="button" data-tab="audio" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-          🎧 Audio Studio
+        <button data-tab="audio" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+          Audio Studio
         </button>
-        <button type="button" data-tab="planner" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-          📅 Planner &amp; Notes
+        <button data-tab="planner" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Planner & Notes
         </button>
-        <button type="button" data-tab="utilities" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-          🛠️ Utilities
+        <button data-tab="calculator" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          Calculator
         </button>
-        <button type="button" data-tab="chat" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-          💬 Global Chat
+        <button data-tab="chat" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+          Global Chat
         </button>
-        <button type="button" data-tab="ai" class="xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-          ✦ Xyrox AI
+        <button data-tab="ai" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+          Xyrox AI
         </button>
       </nav>
-
-      <!-- Right Action Controls -->
-      <div class="flex items-center gap-2">
-        <!-- Desk Mode Button -->
-        <button id="enterDeskModeBtn" type="button"
-          class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-white/10 transition"
-          title="Fullscreen iPad Desk Clock Mode">
-          <span>🖥️ Desk</span>
-        </button>
-
-        <!-- User Account / Cloud Sync Button -->
-        <button id="openAuthModalBtn" type="button"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 transition shadow-sm">
-          <span id="navUserStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600"></span>
-          <span id="navUserLabel">Sign In</span>
-        </button>
-
-        <!-- Theme Toggle -->
-        <button id="themeToggleBtn" type="button"
-          class="p-2 rounded-lg bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-white/10 transition"
-          title="Switch Light / Dark Mode">
-          <span id="themeIconLabel" class="text-xs font-mono">☀/☾</span>
-        </button>
-      </div>
     </div>
-  </header>
 
-  <!-- ================= MAIN APPLICATION CONTAINER ================= -->
-  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 min-h-[calc(100vh-4rem)] flex flex-col justify-between">
+    <!-- User Profile & Settings Bottom -->
+    <div class="p-4 border-t border-white/5">
+      <button data-tab="settings" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-white/5">
+        <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <div class="flex flex-col items-start leading-tight">
+          <span id="sidebarUserName">Guest Account</span>
+          <span class="text-[10px] opacity-50">Settings & Auth</span>
+        </div>
+      </button>
+    </div>
+  </aside>
 
-    <!-- =======================================================================
-         WORKSPACE 1: COMMAND CENTER (PART A)
-    ======================================================================== -->
-    <main id="tab-command" class="workspace-section space-y-6">
+  <!-- Mobile Nav (Bottom Bar) -->
+  <nav class="md:hidden fixed bottom-0 w-full h-16 glass-panel z-30 flex items-center justify-around px-2 border-t border-white/5">
+    <button data-tab="command" class="nav-btn p-3 text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></button>
+    <button data-tab="audio" class="nav-btn p-3 text-zinc-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg></button>
+    <button data-tab="planner" class="nav-btn p-3 text-zinc-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>
+    <button data-tab="calculator" class="nav-btn p-3 text-zinc-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></button>
+    <button data-tab="settings" class="nav-btn p-3 text-zinc-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+  </nav>
 
-      <!-- HERO BAR: GREETING, CORE INTENTION & LIVE DIGITAL CLOCK -->
-      <section class="xy-card rounded-2xl p-6 sm:p-7 shadow-sm">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          
-          <div class="space-y-2.5 flex-1">
-            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-white/5 border border-zinc-200/80 dark:border-white/10 text-[11px] font-mono uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-              <span id="greetingBadgeDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span id="greetingPeriodLabel">SYSTEM ONLINE</span>
-              <span id="founderHeroBadge" class="hidden ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">[FOUNDER]</span>
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 h-full overflow-y-auto relative z-10 pb-20 md:pb-0">
+    <div class="max-w-6xl mx-auto p-6 md:p-10">
+
+      <!-- ================= SECTION 1: COMMAND CENTER ================= -->
+      <section id="sec-command" class="tab-content fade-in space-y-8">
+        
+        <!-- Header: Clock & Greeting -->
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 class="text-3xl font-semibold tracking-tight text-white"><span id="greetText">Good morning</span>.</h2>
+            <p class="text-zinc-400 mt-1">Ready to execute objectives.</p>
+          </div>
+          <div class="text-right">
+            <div class="font-mono text-5xl font-bold tracking-tighter text-white" id="mainClock">00:00</div>
+            <div class="font-mono text-sm text-zinc-500 tracking-widest uppercase mt-1" id="mainDate">JAN 01 2026</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Advanced Focus Engine -->
+          <div class="glass-panel p-8 rounded-2xl flex flex-col items-center justify-center text-center h-80">
+            <p class="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-6">Focus Engine</p>
+            
+            <!-- Direct Input Timer -->
+            <div class="flex items-center justify-center gap-2 mb-6">
+              <input type="number" id="timerMinInput" value="25" class="w-24 bg-transparent text-6xl font-mono font-bold text-white text-right focus:outline-none border-b-2 border-transparent focus:border-zinc-700 transition" />
+              <span class="text-6xl font-mono font-bold text-zinc-600">:</span>
+              <input type="number" id="timerSecInput" value="00" class="w-24 bg-transparent text-6xl font-mono font-bold text-white text-left focus:outline-none border-b-2 border-transparent focus:border-zinc-700 transition" />
             </div>
 
-            <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">
-              <span id="greetingText">Good morning</span>,
-              <span id="heroUserName" class="underline decoration-zinc-400 dark:decoration-zinc-600 decoration-dashed underline-offset-4 cursor-pointer">Operator</span>
-            </h1>
-
-            <!-- Core Daily Intention -->
-            <div class="pt-1 max-w-xl">
-              <div class="relative flex items-center">
-                <input id="dailyIntentionInput" type="text"
-                  placeholder="Set primary objective for today..."
-                  class="w-full bg-zinc-100/80 dark:bg-zinc-900/90 border border-zinc-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-900 dark:focus:border-white transition" />
-                <span id="intentionSavedIndicator" class="absolute right-3 text-[11px] font-mono text-emerald-500 opacity-0 transition-opacity">SYNCED ✓</span>
-              </div>
+            <div class="flex gap-4">
+              <button id="btnStartTimer" class="px-8 py-3 rounded-full bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition">Start Focus</button>
+              <button id="btnResetTimer" class="px-8 py-3 rounded-full border border-white/20 text-white font-semibold text-sm hover:bg-white/10 transition">Reset</button>
             </div>
           </div>
 
-          <!-- Live Clock & Format Switch -->
-          <div class="flex flex-row lg:flex-col items-center lg:items-end justify-between border-t lg:border-t-0 lg:border-l border-zinc-200/80 dark:border-white/10 pt-4 lg:pt-0 lg:pl-8">
-            <div class="flex items-baseline gap-2">
-              <span id="liveClockMain" class="font-mono text-4xl sm:text-5xl font-bold tracking-tight tabular-nums">00:00</span>
-              <span id="liveClockSeconds" class="font-mono text-sm text-zinc-400 tabular-nums">00</span>
-              <span id="liveClockAmPm" class="font-mono text-xs font-semibold text-emerald-500">AM</span>
+          <!-- Clean Goal Tracker -->
+          <div class="glass-panel p-6 rounded-2xl h-80 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-sm font-semibold text-white">Active Goals</h3>
+              <button id="addGoalBtn" class="text-xs text-zinc-400 hover:text-white transition">+ Add</button>
             </div>
-            <div class="flex items-center gap-2 mt-2">
-              <button id="toggleClockFormatBtn" type="button" class="px-2.5 py-1 rounded-md text-[11px] font-mono bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-                12H / 24H
+            
+            <div class="overflow-y-auto pr-2 flex-1 space-y-4" id="goalList">
+              <!-- Goals rendered here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SECTION 2: AUDIO STUDIO ================= -->
+      <section id="sec-audio" class="tab-content hidden fade-in space-y-8">
+        <div class="mb-6">
+          <h2 class="text-2xl font-semibold text-white">Audio Studio</h2>
+          <p class="text-zinc-400 text-sm">Procedural NCS Tracks & Ambient Soundscapes</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- NCS Music Player -->
+          <div class="lg:col-span-2 glass-panel rounded-2xl overflow-hidden flex flex-col">
+            <!-- Now Playing Header -->
+            <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+              <div>
+                <p class="text-xs font-mono text-zinc-500 uppercase mb-1">Now Playing</p>
+                <h3 class="text-lg font-bold text-white" id="nowPlayingTitle">Select a track below</h3>
+                <p class="text-sm text-zinc-400" id="nowPlayingArtist">Xyrox Audio Labs</p>
+              </div>
+              <button id="playPauseMusicBtn" class="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition shadow-lg">
+                <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
               </button>
-              <button id="mobileDeskModeBtn" type="button" class="sm:hidden px-2.5 py-1 rounded-md text-[11px] font-mono bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10">
-                🖥️ Desk Mode
-              </button>
+            </div>
+            
+            <!-- Tracklist -->
+            <div class="flex-1 overflow-y-auto h-96 p-2">
+              <table class="w-full text-sm text-left">
+                <tbody id="tracklistTable">
+                  <!-- Tracks injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Ambient Mixers -->
+          <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-sm font-semibold text-white mb-4">Ambient Mixers</h3>
+            <div class="space-y-6" id="ambientSliders">
+              <!-- Sliders injected via JS -->
             </div>
           </div>
 
         </div>
       </section>
 
-      <!-- MAIN 3-COLUMN ARCHITECTURAL GRID -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- COLUMN 1: DUAL POMODORO & STOPWATCH ENGINE (4 COLS) -->
-        <section class="lg:col-span-4 xy-card rounded-2xl p-6 flex flex-col">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">Focus Engine</h2>
-            </div>
-            <span class="text-xs font-mono text-zinc-500 dark:text-zinc-400">
-              Sessions: <strong id="sessionCountDisplay" class="text-zinc-900 dark:text-white">0</strong>
-            </span>
-          </div>
-
-          <!-- Engine Mode Selector: Pomodoro vs Count-Up Stopwatch -->
-          <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/60 dark:border-white/5 mb-6">
-            <button type="button" data-tmode="focus" class="tmode-btn py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm">25m</button>
-            <button type="button" data-tmode="short" class="tmode-btn py-1.5 rounded-lg text-xs font-medium text-zinc-500">5m</button>
-            <button type="button" data-tmode="long" class="tmode-btn py-1.5 rounded-lg text-xs font-medium text-zinc-500">15m</button>
-            <button type="button" data-tmode="stopwatch" class="tmode-btn py-1.5 rounded-lg text-xs font-medium text-zinc-500">⏱️ Up</button>
-          </div>
-
-          <!-- Digital Timer Readout -->
-          <div class="my-4 py-8 rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-white/5 flex flex-col items-center justify-center">
-            <span id="timerModeSubLabel" class="text-[11px] font-mono uppercase tracking-widest text-zinc-400 mb-1">DEEP FOCUS BLOCK</span>
-            <div id="timerReadout" class="font-mono text-5xl sm:text-6xl font-bold tracking-tight tabular-nums">25:00</div>
-            <div id="timerAdjustRow" class="flex items-center gap-2 mt-3">
-              <button id="timerMinusBtn" type="button" class="px-2.5 py-1 rounded text-xs font-mono bg-zinc-200/70 dark:bg-white/5 hover:bg-zinc-300 dark:hover:bg-white/10">-1m</button>
-              <button id="timerPlusBtn" type="button" class="px-2.5 py-1 rounded text-xs font-mono bg-zinc-200/70 dark:bg-white/5 hover:bg-zinc-300 dark:hover:bg-white/10">+1m</button>
+      <!-- ================= SECTION 3: PLANNER & NOTES ================= -->
+      <section id="sec-planner" class="tab-content hidden fade-in space-y-6">
+        <div class="mb-6">
+          <h2 class="text-2xl font-semibold text-white">Planner & Workspace</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Calendar Minimal -->
+          <div class="glass-panel p-6 rounded-2xl h-96">
+            <h3 class="text-sm font-semibold text-white mb-4">Schedule</h3>
+            <div class="text-center font-mono text-zinc-500 text-sm mt-20">
+              Calendar module initialized.<br>Events will appear here.
             </div>
           </div>
 
-          <!-- Start / Pause / Reset -->
-          <div class="grid grid-cols-3 gap-2.5 mt-2">
-            <button id="timerStartBtn" type="button" class="py-3 rounded-xl text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 transition">
-              Start
-            </button>
-            <button id="timerPauseBtn" type="button" disabled class="py-3 rounded-xl text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:opacity-40 transition">
-              Pause
-            </button>
-            <button id="timerResetBtn" type="button" class="py-3 rounded-xl text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition">
-              Reset
-            </button>
+          <!-- Scratchpad -->
+          <div class="lg:col-span-2 glass-panel p-6 rounded-2xl h-96 flex flex-col">
+            <input type="text" placeholder="Note Title..." class="bg-transparent text-lg font-semibold text-white border-none focus:outline-none mb-4 placeholder-zinc-600" />
+            <textarea class="flex-1 bg-transparent resize-none text-zinc-300 font-mono text-sm focus:outline-none placeholder-zinc-700" placeholder="Start typing your notes here... Auto-saves locally."></textarea>
           </div>
+        </div>
+      </section>
 
-          <p id="timerStatusLine" class="text-[11px] font-mono text-center text-zinc-400 mt-4">Ready to log focus minutes.</p>
-        </section>
+      <!-- ================= SECTION 4: CALCULATOR (Replaces messy utilities) ================= -->
+      <section id="sec-calculator" class="tab-content hidden fade-in flex justify-center items-center h-[70vh]">
+        <div class="glass-panel rounded-3xl p-6 w-80 shadow-2xl border border-white/10">
+          <div class="bg-black/50 rounded-xl p-4 mb-4 text-right overflow-hidden">
+            <div class="text-zinc-500 text-sm h-5 font-mono" id="calcHistory"></div>
+            <div class="text-white text-4xl font-light font-mono tracking-tight mt-1" id="calcDisplay">0</div>
+          </div>
+          <div class="grid grid-cols-4 gap-3">
+            <button class="calc-btn col-span-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl py-4 text-lg font-medium" onclick="calcAction('clear')">AC</button>
+            <button class="calc-btn bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl py-4 text-lg font-medium" onclick="calcAction('del')">⌫</button>
+            <button class="calc-btn bg-white text-black hover:bg-zinc-200 rounded-xl py-4 text-xl font-medium" onclick="calcAction('/')">÷</button>
+            
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('7')">7</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('8')">8</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('9')">9</button>
+            <button class="calc-btn bg-white text-black hover:bg-zinc-200 rounded-xl py-4 text-xl font-medium" onclick="calcAction('*')">×</button>
+            
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('4')">4</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('5')">5</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('6')">6</button>
+            <button class="calc-btn bg-white text-black hover:bg-zinc-200 rounded-xl py-4 text-xl font-medium" onclick="calcAction('-')">−</button>
+            
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('1')">1</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('2')">2</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('3')">3</button>
+            <button class="calc-btn bg-white text-black hover:bg-zinc-200 rounded-xl py-4 text-xl font-medium" onclick="calcAction('+')">+</button>
+            
+            <button class="calc-btn col-span-2 bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('0')">0</button>
+            <button class="calc-btn bg-white/5 hover:bg-white/10 text-white rounded-xl py-4 text-xl font-medium" onclick="calcAction('.')">.</button>
+            <button class="calc-btn bg-white text-black hover:bg-zinc-200 rounded-xl py-4 text-xl font-medium" onclick="calcAction('=')">=</button>
+          </div>
+        </div>
+      </section>
 
-        <!-- COLUMN 2: DAILY HABITS & QUICK TASKS (5 COLS) -->
-        <section class="lg:col-span-5 xy-card rounded-2xl p-6 flex flex-col">
-          <div class="flex items-center justify-between mb-3">
+      <!-- ================= SECTION 5: GLOBAL CHAT ================= -->
+      <section id="sec-chat" class="tab-content hidden fade-in space-y-6 h-full flex flex-col">
+        <div class="mb-2">
+          <h2 class="text-2xl font-semibold text-white">Global Community Chat</h2>
+        </div>
+        
+        <div class="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden min-h-[500px]">
+          <!-- Discord CTA -->
+          <div class="bg-indigo-600/20 border-b border-indigo-500/30 p-4 flex items-center justify-between">
             <div>
-              <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">Habits &amp; Tasks</h2>
+              <p class="text-white font-medium text-sm">Official Discord Server</p>
+              <p class="text-indigo-200 text-xs">Join the community, request features, and hang out.</p>
             </div>
-            <span id="taskProgressLabel" class="text-xs font-mono text-zinc-500">0/0 (0%)</span>
-          </div>
-
-          <!-- Progress Bar -->
-          <div class="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-4">
-            <div id="taskProgressBar" class="h-full bg-zinc-900 dark:bg-emerald-400 transition-all duration-300" style="width: 0%"></div>
-          </div>
-
-          <!-- Add Task Form -->
-          <form id="taskForm" class="flex gap-2 mb-4">
-            <input id="taskInput" type="text" required maxlength="90" placeholder="Add task or recurring habit..."
-              class="flex-1 bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white" />
-            <select id="taskTypeSelect" class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-2.5 py-2.5 text-xs font-medium">
-              <option value="habit">🔄 Habit</option>
-              <option value="task">⚡ Task</option>
-            </select>
-            <button type="submit" class="px-4 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90">
-              Add
-            </button>
-          </form>
-
-          <!-- Filter Row -->
-          <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-zinc-200/70 dark:border-white/10 text-xs">
-            <div class="flex gap-1.5">
-              <button type="button" data-tfilter="all" class="tfilter-btn px-2 py-1 rounded font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-950">All</button>
-              <button type="button" data-tfilter="habit" class="tfilter-btn px-2 py-1 rounded font-medium text-zinc-500">Habits</button>
-              <button type="button" data-tfilter="task" class="tfilter-btn px-2 py-1 rounded font-medium text-zinc-500">Tasks</button>
-            </div>
-            <button id="clearDoneTasksBtn" type="button" class="text-[11px] font-mono text-zinc-400 hover:text-rose-500">Clear Done</button>
-          </div>
-
-          <!-- Task List -->
-          <ul id="taskListEl" class="space-y-2 max-h-[300px] overflow-y-auto pr-1"></ul>
-        </section>
-
-        <!-- COLUMN 3: GOAL PROGRESS BARS & EVENT COUNTDOWNS (3 COLS) -->
-        <section class="lg:col-span-3 xy-card rounded-2xl p-6 flex flex-col space-y-6">
-          <!-- Long-Term Goals -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">Goal Trackers</h2>
-              <button id="addGoalToggleBtn" type="button" class="text-xs font-mono text-emerald-500 hover:underline">+ New</button>
-            </div>
-
-            <form id="addGoalForm" class="hidden space-y-2 mb-3 p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900">
-              <input id="goalTitleInput" type="text" required placeholder="Goal name (e.g. Build AI)" class="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10" />
-              <div class="flex gap-2">
-                <input id="goalPercentInput" type="number" min="0" max="100" value="25" class="w-20 px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10" />
-                <button type="submit" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-zinc-950">Save</button>
-              </div>
-            </form>
-
-            <div id="goalsListEl" class="space-y-3"></div>
-          </div>
-
-          <!-- Event Countdowns -->
-          <div class="pt-4 border-t border-zinc-200/70 dark:border-white/10">
-            <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">Countdowns</h2>
-              <button id="addCountdownToggleBtn" type="button" class="text-xs font-mono text-emerald-500 hover:underline">+ New</button>
-            </div>
-
-            <form id="addCountdownForm" class="hidden space-y-2 mb-3 p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900">
-              <input id="cdTitleInput" type="text" required placeholder="Event (e.g. Xyrox Launch)" class="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10" />
-              <input id="cdDateInput" type="date" required class="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10" />
-              <button type="submit" class="w-full py-1.5 rounded-lg text-xs font-semibold bg-zinc-900 dark:bg-white text-white dark:text-zinc-950">Add Countdown</button>
-            </form>
-
-            <div id="countdownsListEl" class="space-y-2.5"></div>
-          </div>
-        </section>
-
-      </div>
-    </main>
-
-    <!-- =======================================================================
-         WORKSPACE 2: AUDIO STUDIO (PART B)
-    ======================================================================== -->
-    <section id="tab-audio" class="workspace-section hidden space-y-6">
-      <!-- TOP BANNER: AUDIO STUDIO HEADER -->
-      <div class="xy-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-white/5 border border-zinc-200/80 dark:border-white/10 text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-            <span id="audioLiveDot" class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-            <span>XYROX AUDIO ENGINE // ZERO-COPYRIGHT NCS &amp; AMBIENT STUDIO</span>
-          </div>
-          <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">NCS Music &amp; 8-Channel Soundscape Mixer</h2>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Play Chill or Energetic NCS synth tracks and layer up to 8 ambient soundscapes simultaneously while you work.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="muteAllAudioBtn" type="button" class="px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 hover:border-rose-500/50 hover:text-rose-500 transition">
-            🔇 Stop All Audio
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- LEFT 5 COLS: NCS & LO-FI MUSIC DECK -->
-        <div class="lg:col-span-5 xy-card rounded-2xl p-6 flex flex-col justify-between space-y-5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400">NCS / Synth Music Deck</span>
-            <!-- Playlist Switcher -->
-            <div class="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/60 dark:border-white/5">
-              <button type="button" data-playlist="chill" class="playlist-tab-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm">
-                🌙 Chill NCS
-              </button>
-              <button type="button" data-playlist="energetic" class="playlist-tab-btn px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-500">
-                ⚡ Energetic NCS
-              </button>
-            </div>
-          </div>
-
-          <!-- Now Playing Card + Visualizer -->
-          <div class="p-5 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-925 border border-zinc-800 space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <span id="ncsTrackGenreBadge" class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">CHILL FOCUS NCS</span>
-                <h3 id="ncsTrackTitle" class="text-base font-semibold mt-1.5">Cybernetic Rain (Lo-Fi VIP)</h3>
-                <p id="ncsTrackArtist" class="text-xs text-zinc-400 font-mono">Xyrox Audio Labs • 100% Royalty-Free</p>
-              </div>
-              <!-- Animated Equalizer Bars -->
-              <div id="ncsEqBars" class="flex items-end gap-1 h-8 px-2">
-                <span class="w-1 bg-emerald-400 rounded-full h-2 transition-all duration-150"></span>
-                <span class="w-1 bg-emerald-400 rounded-full h-3 transition-all duration-150"></span>
-                <span class="w-1 bg-emerald-400 rounded-full h-2 transition-all duration-150"></span>
-                <span class="w-1 bg-emerald-400 rounded-full h-4 transition-all duration-150"></span>
-                <span class="w-1 bg-emerald-400 rounded-full h-2 transition-all duration-150"></span>
-              </div>
-            </div>
-
-            <!-- Controls & Volume -->
-            <div class="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-              <div class="flex items-center gap-2">
-                <button id="ncsPrevBtn" type="button" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono">⏮</button>
-                <button id="ncsPlayPauseBtn" type="button" class="px-5 py-2 rounded-xl bg-white text-zinc-950 font-semibold text-xs hover:opacity-90 transition">
-                  ▶ Play Track
-                </button>
-                <button id="ncsNextBtn" type="button" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono">⏭</button>
-              </div>
-              <div class="flex items-center gap-2 w-28">
-                <span class="text-[11px] font-mono text-zinc-400">VOL</span>
-                <input id="ncsMasterVol" type="range" min="0" max="100" value="70" class="w-full accent-emerald-400 cursor-pointer" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Tracklist Selector -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-mono uppercase text-zinc-400">Available Tracks (Tap to Play)</span>
-              <span id="ncsTrackCountLabel" class="text-[11px] font-mono text-zinc-400">10 Tracks</span>
-            </div>
-            <div id="ncsTracklistEl" class="space-y-1.5 max-h-60 overflow-y-auto pr-1"></div>
-          </div>
-        </div>
-
-        <!-- RIGHT 7 COLS: 8-CHANNEL LAYERABLE SOUNDSCAPE STUDIO -->
-        <div class="lg:col-span-7 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">8-Channel Layerable Soundscapes</h3>
-              <p class="text-xs text-zinc-500 dark:text-zinc-400">Drag any slider above 0% to mix real-time ambient textures over your music.</p>
-            </div>
-            <button id="resetSoundscapesBtn" type="button" class="text-xs font-mono text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-              Reset Sliders
-            </button>
-          </div>
-
-          <div id="soundscapeGridEl" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =======================================================================
-         WORKSPACE 3: PLANNER & HEATMAP (PART B)
-    ======================================================================== -->
-    <section id="tab-planner" class="workspace-section hidden space-y-6">
-      <!-- TOP ROW: CALENDAR (5 COLS) + CATEGORIZED SCRATCHPAD NOTES (7 COLS) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- INTERACTIVE MONTHLY CALENDAR -->
-        <div class="lg:col-span-5 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[11px] font-mono uppercase text-zinc-400">Schedule &amp; Deadlines</span>
-              <h3 id="calMonthYearTitle" class="text-lg font-semibold tracking-tight">Month Year</h3>
-            </div>
-            <div class="flex items-center gap-1">
-              <button id="calPrevMonthBtn" type="button" class="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-white/5 text-xs font-mono hover:bg-zinc-200 dark:hover:bg-white/10">◀</button>
-              <button id="calTodayBtn" type="button" class="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-white/5 text-xs font-mono hover:bg-zinc-200 dark:hover:bg-white/10">Today</button>
-              <button id="calNextMonthBtn" type="button" class="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-white/5 text-xs font-mono hover:bg-zinc-200 dark:hover:bg-white/10">▶</button>
-            </div>
-          </div>
-
-          <!-- Weekday Headers -->
-          <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-mono text-zinc-400 pb-1">
-            <span>SU</span><span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span>
-          </div>
-
-          <!-- Days Grid -->
-          <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1.5"></div>
-
-          <!-- Selected Date Event Manager -->
-          <div class="pt-4 border-t border-zinc-200/70 dark:border-white/10 space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-mono text-zinc-500 dark:text-zinc-400">Events on <strong id="selectedCalDateLabel" class="text-zinc-900 dark:text-white">Today</strong></span>
-            </div>
-            <form id="calEventForm" class="flex gap-2">
-              <input id="calEventInput" type="text" required placeholder="Add event or deadline for this day..."
-                class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-zinc-900 dark:focus:border-white" />
-              <button type="submit" class="px-3.5 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold">
-                Add
-              </button>
-            </form>
-            <ul id="calDateEventsList" class="space-y-1.5 max-h-36 overflow-y-auto"></ul>
-          </div>
-        </div>
-
-        <!-- CATEGORIZED MULTI-NOTE SCRATCHPAD -->
-        <div class="lg:col-span-7 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <span class="text-[11px] font-mono uppercase text-zinc-400">Auto-Saving Workspace</span>
-              <h3 class="text-lg font-semibold tracking-tight">Categorized Notes &amp; Scratchpad</h3>
-            </div>
-            <div class="flex items-center gap-2">
-              <select id="noteCategorySelect" class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs font-medium">
-                <option value="Work/Study">📚 Work / Study</option>
-                <option value="Ideas">💡 Project Ideas</option>
-                <option value="Code">💻 Code Snippets</option>
-                <option value="Personal">🔒 Personal</option>
-              </select>
-              <button id="createNewNoteBtn" type="button" class="px-3.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold">
-                + New Note
-              </button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
-            <!-- Saved Notes Sidebar List (4 cols) -->
-            <div id="notesListSidebar" class="md:col-span-4 space-y-1.5 max-h-[320px] overflow-y-auto pr-1"></div>
-
-            <!-- Active Note Editor (8 cols) -->
-            <div class="md:col-span-8 flex flex-col space-y-2.5">
-              <input id="activeNoteTitleInput" type="text" placeholder="Note Title..."
-                class="w-full bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-zinc-900 dark:focus:border-white" />
-              <textarea id="activeNoteBodyInput" rows="10" placeholder="Write thoughts, markdown notes, or code snippets here... (Auto-saves as you type)"
-                class="w-full bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl p-3.5 text-xs sm:text-sm font-mono leading-relaxed focus:outline-none focus:border-zinc-900 dark:focus:border-white resize-none"></textarea>
-              <div class="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                <span id="noteWordCountLabel">0 words • 0 chars</span>
-                <div class="flex items-center gap-3">
-                  <span id="noteAutoSaveBadge" class="text-emerald-500">AUTO-SAVED ✓</span>
-                  <button id="deleteActiveNoteBtn" type="button" class="text-rose-500 hover:underline">Delete Note</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- BOTTOM ROW: GITHUB-STYLE 365-DAY FOCUS HEATMAP & ANALYTICS -->
-      <div class="xy-card rounded-2xl p-6 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <span class="text-[11px] font-mono uppercase text-zinc-400">Consistency Telemetry</span>
-            <h3 class="text-base font-semibold tracking-tight">365-Day Focus &amp; Habit Activity Heatmap</h3>
-          </div>
-          <div class="flex items-center gap-3">
-            <button id="logDemoFocusBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/10 text-xs font-mono hover:border-emerald-500/50 transition">
-              + Log 25m Today
-            </button>
-            <div class="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
-              <span>Less</span>
-              <span class="w-2.5 h-2.5 rounded-sm bg-zinc-200 dark:bg-zinc-800"></span>
-              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-900/60"></span>
-              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-600/80"></span>
-              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span>
-              <span>More</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary Metric Pills -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5">
-            <span class="text-[11px] font-mono text-zinc-400">TOTAL FOCUS MINS</span>
-            <div id="heatStatTotalMins" class="text-xl font-bold font-mono mt-0.5">0m</div>
-          </div>
-          <div class="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5">
-            <span class="text-[11px] font-mono text-zinc-400">ACTIVE DAYS</span>
-            <div id="heatStatActiveDays" class="text-xl font-bold font-mono mt-0.5">0</div>
-          </div>
-          <div class="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5">
-            <span class="text-[11px] font-mono text-zinc-400">TODAY'S FOCUS</span>
-            <div id="heatStatTodayMins" class="text-xl font-bold font-mono text-emerald-500 mt-0.5">0m</div>
-          </div>
-          <div class="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5">
-            <span class="text-[11px] font-mono text-zinc-400">HABIT STREAK PEAK</span>
-            <div id="heatStatPeakStreak" class="text-xl font-bold font-mono mt-0.5">4d</div>
-          </div>
-        </div>
-
-        <!-- Scrollable 52-Week Contribution Grid -->
-        <div class="overflow-x-auto pb-2">
-          <div id="heatmapGridEl" class="inline-grid grid-rows-7 grid-flow-col gap-1 min-w-[680px]"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =======================================================================
-         WORKSPACE 4: XYROX UTILITY BOX (PART C)
-    ======================================================================== -->
-    <section id="tab-utilities" class="workspace-section hidden space-y-6">
-      <div class="xy-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <span class="text-[11px] font-mono uppercase text-zinc-400">XYROX-UTILITIES // DEVELOPER &amp; DAILY TOOLKIT</span>
-          <h2 class="text-xl sm:text-2xl font-semibold tracking-tight mt-0.5">Everyday Precision Utilities</h2>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Instant client-side tools engineered for speed, privacy, and zero latency.</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- TOOL 1: CRYPTOGRAPHIC PASSWORD GENERATOR (6 COLS) -->
-        <div class="lg:col-span-6 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[10px] font-mono uppercase text-emerald-500">SECURITY MODULE</span>
-              <h3 class="text-base font-semibold">Cryptographic Password Generator</h3>
-            </div>
-            <span id="pwdStrengthBadge" class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">STRONG</span>
-          </div>
-
-          <div class="flex items-center gap-2 p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10">
-            <input id="pwdOutputInput" type="text" readonly
-              class="flex-1 bg-transparent font-mono text-sm text-zinc-900 dark:text-white focus:outline-none select-all" />
-            <button id="copyPwdBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90">
-              Copy
-            </button>
-          </div>
-
-          <div class="space-y-3 pt-1">
-            <div class="flex items-center justify-between text-xs">
-              <span class="font-mono text-zinc-500">Password Length: <strong id="pwdLenLabel" class="text-zinc-900 dark:text-white">18</strong></span>
-              <input id="pwdLenSlider" type="range" min="8" max="48" value="18" class="w-44 accent-zinc-900 dark:accent-emerald-400 cursor-pointer" />
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <label class="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 cursor-pointer">
-                <input id="pwdOptUpper" type="checkbox" checked class="accent-emerald-500" />
-                <span>A-Z</span>
-              </label>
-              <label class="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 cursor-pointer">
-                <input id="pwdOptLower" type="checkbox" checked class="accent-emerald-500" />
-                <span>a-z</span>
-              </label>
-              <label class="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 cursor-pointer">
-                <input id="pwdOptNum" type="checkbox" checked class="accent-emerald-500" />
-                <span>0-9</span>
-              </label>
-              <label class="flex items-center gap-2 p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 cursor-pointer">
-                <input id="pwdOptSym" type="checkbox" checked class="accent-emerald-500" />
-                <span>!@#$</span>
-              </label>
-            </div>
-
-            <button id="regenPwdBtn" type="button" class="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90 transition">
-              ⚡ Generate New Password
-            </button>
-          </div>
-        </div>
-
-        <!-- TOOL 2: GLOBAL WORLD CLOCK TELEMETRY (6 COLS) -->
-        <div class="lg:col-span-6 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[10px] font-mono uppercase text-emerald-500">TIMEZONE MATRIX</span>
-              <h3 class="text-base font-semibold">Global Discord &amp; Server World Clocks</h3>
-            </div>
-            <span class="text-[11px] font-mono text-zinc-400">LIVE SYNC</span>
-          </div>
-          <div id="worldClockGridEl" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-        </div>
-
-        <!-- TOOL 3: TEXT & READING TIME ANALYZER (6 COLS) -->
-        <div class="lg:col-span-6 xy-card rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[10px] font-mono uppercase text-emerald-500">TEXT INSPECTOR</span>
-              <h3 class="text-base font-semibold">Word, Character &amp; Read-Time Analyzer</h3>
-            </div>
-            <button id="clearAnalyzerBtn" type="button" class="text-xs font-mono text-zinc-400 hover:text-rose-500">Clear</button>
-          </div>
-
-          <textarea id="textAnalyzerInput" rows="5" placeholder="Paste essay, Discord announcement, or code here to inspect metrics..."
-            class="w-full bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-zinc-900 dark:focus:border-white resize-none"></textarea>
-
-          <div class="grid grid-cols-4 gap-2 text-center">
-            <div class="p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70">
-              <span class="text-[10px] font-mono text-zinc-400 block">WORDS</span>
-              <strong id="taWords" class="font-mono text-base">0</strong>
-            </div>
-            <div class="p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70">
-              <span class="text-[10px] font-mono text-zinc-400 block">CHARS</span>
-              <strong id="taChars" class="font-mono text-base">0</strong>
-            </div>
-            <div class="p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70">
-              <span class="text-[10px] font-mono text-zinc-400 block">LINES</span>
-              <strong id="taLines" class="font-mono text-base">0</strong>
-            </div>
-            <div class="p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70">
-              <span class="text-[10px] font-mono text-zinc-400 block">READ TIME</span>
-              <strong id="taRead" class="font-mono text-base text-emerald-500">0s</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- TOOL 4: QUICK UNIT & EXPRESSION CONVERTER (6 COLS) -->
-        <div class="lg:col-span-6 xy-card rounded-2xl p-6 space-y-4">
-          <div>
-            <span class="text-[10px] font-mono uppercase text-emerald-500">COMPUTE &amp; CONVERT</span>
-            <h3 class="text-base font-semibold">Instant Unit &amp; Math Converter</h3>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <input id="unitValueInput" type="number" step="any" value="1"
-              class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm font-mono" />
-            <select id="unitCategorySelect" class="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-medium">
-              <option value="km_mi">Kilometers → Miles</option>
-              <option value="mi_km">Miles → Kilometers</option>
-              <option value="kg_lb">Kilograms → Pounds</option>
-              <option value="lb_kg">Pounds → Kilograms</option>
-              <option value="c_f">Celsius → Fahrenheit</option>
-              <option value="f_c">Fahrenheit → Celsius</option>
-              <option value="gb_mb">Gigabytes → Megabytes</option>
-            </select>
-            <div id="unitResultBox" class="flex items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-mono text-sm font-bold px-3 py-2">
-              0.6214 mi
-            </div>
-          </div>
-
-          <!-- Quick Math Scratch Evaluator -->
-          <div class="pt-2 border-t border-zinc-200/70 dark:border-white/10 space-y-2">
-            <label class="block text-[11px] font-mono text-zinc-400">QUICK MATH EXPRESSION (e.g. (25 * 4) + 180 / 3)</label>
-            <div class="flex gap-2">
-              <input id="mathExprInput" type="text" placeholder="Type math expression..."
-                class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono" />
-              <div id="mathExprOutput" class="px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-500 font-mono text-xs font-bold flex items-center">
-                = 0
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- =======================================================================
-         WORKSPACE 5: GLOBAL COMMUNITY CHAT & FOUNDER MODERATION (PART C)
-    ======================================================================== -->
-    <section id="tab-chat" class="workspace-section hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- LEFT 8 COLS: GLOBAL LIVE CHAT ROOM -->
-        <div class="lg:col-span-8 xy-card rounded-2xl p-6 flex flex-col space-y-4">
-          <!-- Header + Pinned Banner -->
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-zinc-200/80 dark:border-white/10">
-            <div class="flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <div>
-                <h2 class="text-base font-semibold tracking-tight">#xyrox-global-chat</h2>
-                <p class="text-[11px] font-mono text-zinc-400">Public Community Channel • Syncs with Cloud &amp; Discord Hub</p>
-              </div>
-            </div>
-            <span id="chatIdentityBadge" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-white/5 text-zinc-500">
-              Posting as: Operator
-            </span>
-          </div>
-
-          <!-- Pinned Announcement Bar -->
-          <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-xs">
-              <span class="font-mono font-bold text-amber-500 uppercase">📌 PINNED:</span>
-              <span id="pinnedChatBannerText" class="text-zinc-800 dark:text-zinc-200">Welcome to XYROX-UTILITIES Global Chat — Engineered by xyrox6789.</span>
-            </div>
-          </div>
-
-          <!-- Founder-Only Moderation Bar (Visible ONLY when logged in as xyrox6789) -->
-          <div id="founderModerationBar" class="hidden p-3 rounded-xl bg-zinc-900 text-white dark:bg-white/5 border border-emerald-500/40 space-y-2">
-            <div class="flex items-center justify-between text-[11px] font-mono text-emerald-400">
-              <span>👑 FOUNDER CONTROLS ACTIVE (xyrox6789)</span>
-              <button id="clearAllChatFounderBtn" type="button" class="text-rose-400 hover:underline">Purge Channel</button>
-            </div>
-            <form id="founderPinForm" class="flex gap-2">
-              <input id="founderPinInput" type="text" placeholder="Update pinned announcement banner..."
-                class="flex-1 bg-black/40 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-white" />
-              <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-mono text-xs font-bold">
-                Pin Banner
-              </button>
-            </form>
-          </div>
-
-          <!-- Messages Feed -->
-          <div id="chatMessagesFeed" class="space-y-2.5 h-[360px] overflow-y-auto pr-1"></div>
-
-          <!-- Send Message Form -->
-          <form id="chatSendForm" class="flex gap-2 pt-2">
-            <input id="chatMessageInput" type="text" required maxlength="280" placeholder="Send a message to #xyrox-global-chat..."
-              class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-white" />
-            <button type="submit" class="px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90 transition">
-              Send ↵
-            </button>
-          </form>
-        </div>
-
-        <!-- RIGHT 4 COLS: OFFICIAL DISCORD HUB & COMMUNITY PORTAL -->
-        <div class="lg:col-span-4 space-y-6">
-          <div class="xy-card rounded-2xl p-6 space-y-4">
-            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-indigo-500/15 text-indigo-400 text-[11px] font-mono">
-              <span>DISCORD SERVER BRIDGE</span>
-            </div>
-            <h3 class="text-lg font-semibold tracking-tight">Join the Official Xyrox Utilities Discord</h3>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Connect directly with <strong class="text-zinc-900 dark:text-white font-mono">xyrox6789</strong>, request new platform features, chat with members, and unlock upcoming Xyrox perks.
-            </p>
-
-            <a id="discordInviteLinkBtn" href="https://discord.com" target="_blank" rel="noopener noreferrer"
-              class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition">
-              <span>💬 Launch Xyrox Discord Server</span>
+            <a href="https://discord.gg/crxjFeNtWG" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition">
+              Join Discord
             </a>
-
-            <!-- Founder Discord Invite Customizer -->
-            <div id="founderDiscordConfigBox" class="hidden pt-3 border-t border-zinc-200 dark:border-white/10 space-y-2">
-              <label class="block text-[10px] font-mono uppercase text-amber-400">👑 Founder: Set Your Discord Invite URL</label>
-              <div class="flex gap-1.5">
-                <input id="founderDiscordUrlInput" type="url" placeholder="https://discord.gg/your-code"
-                  class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono" />
-                <button id="saveDiscordUrlBtn" type="button" class="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold">
-                  Save
-                </button>
-              </div>
-            </div>
           </div>
 
-          <div class="xy-card rounded-2xl p-6 space-y-2.5 text-xs">
-            <h4 class="font-mono font-semibold uppercase text-zinc-400 text-[11px]">Channel Guidelines</h4>
-            <p class="text-zinc-500 dark:text-zinc-400">1. Respect all operators and builders in the chat.</p>
-            <p class="text-zinc-500 dark:text-zinc-400">2. Sign in with <code class="font-mono text-emerald-500">xyrox6789</code> in the top bar to test Founder badge &amp; moderation controls.</p>
+          <!-- Chat Window -->
+          <div class="flex-1 p-6 overflow-y-auto space-y-4" id="chatFeed">
+            <div class="text-center text-xs text-zinc-500 font-mono my-4">Welcome to Xyrox Global Chat. Connect Google account in Settings to post.</div>
+          </div>
+
+          <!-- Input -->
+          <div class="p-4 border-t border-white/5 bg-black/20">
+            <form id="chatForm" class="flex gap-3">
+              <input type="text" id="chatInput" placeholder="Sign in via Settings to send messages..." disabled class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 disabled:opacity-50" />
+              <button type="submit" disabled class="px-6 py-3 bg-white text-black font-semibold rounded-xl text-sm disabled:opacity-50 transition">Send</button>
+            </form>
           </div>
         </div>
+      </section>
 
-      </div>
-    </section>
+      <!-- ================= SECTION 6: AI SKELETON ================= -->
+      <section id="sec-ai" class="tab-content hidden fade-in space-y-6">
+         <div class="glass-panel p-8 rounded-2xl h-[70vh] flex flex-col">
+            <h2 class="text-2xl font-semibold text-white mb-2">XYROX-NEURAL-v1</h2>
+            <p class="text-zinc-400 text-sm mb-6 border-b border-white/10 pb-4">Custom AI Model Skeleton. Awaiting backend neural weights connection.</p>
+            
+            <div class="flex-1 overflow-y-auto font-mono text-sm text-zinc-300 space-y-2 mb-4" id="aiTerminal">
+              <div class="text-zinc-500">> Boot sequence initialized...</div>
+              <div class="text-zinc-500">> Loading proprietary architecture...</div>
+              <div class="text-white">> SYSTEM READY.</div>
+            </div>
 
-    <!-- =======================================================================
-         WORKSPACE 6: XYROX CUSTOM AI ENGINE TERMINAL (PART C)
-    ======================================================================== -->
-    <section id="tab-ai" class="workspace-section hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="flex gap-3">
+              <input type="text" placeholder="Command input..." class="flex-1 bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-white font-mono" />
+              <button class="px-6 py-3 border border-white/20 text-white font-semibold rounded-lg text-sm hover:bg-white/10 transition font-mono">Execute</button>
+            </div>
+         </div>
+      </section>
 
-        <!-- LEFT 8 COLS: XYROX AI TERMINAL CONSOLE -->
-        <div class="lg:col-span-8 xy-card rounded-2xl p-6 flex flex-col space-y-4">
-          <div class="flex items-center justify-between pb-3 border-b border-zinc-200/80 dark:border-white/10">
-            <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-mono font-bold text-xs flex items-center justify-center">
-                ✦
-              </div>
-              <div>
-                <div class="flex items-center gap-2">
-                  <h2 class="text-base font-semibold tracking-tight">XYROX-NEURAL-v1</h2>
-                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400">PROPRIETARY ARCHITECTURE</span>
+      <!-- ================= SECTION 7: SETTINGS & PROFILE ================= -->
+      <section id="sec-settings" class="tab-content hidden fade-in space-y-8">
+        <div class="mb-6">
+          <h2 class="text-2xl font-semibold text-white">Settings & Profile</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Authentication Card -->
+          <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-sm font-semibold text-white mb-4">Account</h3>
+            
+            <div id="loggedOutView" class="space-y-4">
+              <p class="text-sm text-zinc-400">Sign in with Google to sync your settings and chat globally.</p>
+              <button onclick="window.xyroxAuth.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white text-black py-3 rounded-xl font-semibold text-sm hover:bg-zinc-200 transition">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+              </button>
+            </div>
+
+            <div id="loggedInView" class="space-y-4 hidden">
+              <div class="flex items-center gap-4 bg-black/30 p-4 rounded-xl">
+                <div class="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center text-white font-bold text-lg" id="profileAvatar">U</div>
+                <div>
+                  <p class="text-white font-medium" id="profileName">User</p>
+                  <p class="text-zinc-400 text-xs" id="profileEmail">user@example.com</p>
                 </div>
-                <p class="text-[11px] font-mono text-zinc-400">Custom AI Model Skeleton • Built from scratch by xyrox6789</p>
               </div>
+              <button onclick="window.xyroxAuth.logout()" class="w-full py-3 border border-zinc-700 text-zinc-300 rounded-xl font-semibold text-sm hover:bg-zinc-800 transition">
+                Sign Out
+              </button>
             </div>
-            <button id="clearAiConsoleBtn" type="button" class="text-xs font-mono text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-              Clear Terminal
-            </button>
           </div>
 
-          <!-- AI Conversation Stream -->
-          <div id="aiTerminalStream" class="space-y-3 h-[360px] overflow-y-auto font-mono text-xs p-3 rounded-xl bg-zinc-950 text-zinc-200 border border-white/10"></div>
-
-          <!-- Quick Prompt Chips -->
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" data-aiprompt="/status" class="ai-chip-btn px-2.5 py-1 rounded-lg text-[11px] font-mono bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10">/status</button>
-            <button type="button" data-aiprompt="/architecture" class="ai-chip-btn px-2.5 py-1 rounded-lg text-[11px] font-mono bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10">/architecture</button>
-            <button type="button" data-aiprompt="/analyze-focus" class="ai-chip-btn px-2.5 py-1 rounded-lg text-[11px] font-mono bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10">/analyze-focus</button>
-            <button type="button" data-aiprompt="/help" class="ai-chip-btn px-2.5 py-1 rounded-lg text-[11px] font-mono bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10">/help</button>
-          </div>
-
-          <!-- Prompt Input -->
-          <form id="aiPromptForm" class="flex gap-2">
-            <input id="aiPromptInput" type="text" required placeholder="Query XYROX-NEURAL-v1 or type /help..."
-              class="flex-1 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-zinc-900 dark:focus:border-white" />
-            <button type="submit" class="px-5 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90">
-              Execute ↵
-            </button>
-          </form>
-        </div>
-
-        <!-- RIGHT 4 COLS: CUSTOM AI ENDPOINT CONNECTOR -->
-        <div class="lg:col-span-4 xy-card rounded-2xl p-6 space-y-4">
-          <span class="text-[10px] font-mono uppercase text-emerald-500">MODEL TELEMETRY &amp; API HOOK</span>
-          <h3 class="text-base font-semibold">Connect Your Custom Xyrox AI Backend</h3>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            This channel is hard-wired for your own custom-trained model (<strong class="text-zinc-900 dark:text-white">not</strong> ChatGPT or Gemini). When your neural server is ready, paste its inference URL below.
-          </p>
-
-          <div class="space-y-2 pt-1">
-            <label class="block text-[11px] font-mono text-zinc-400">CUSTOM INFERENCE ENDPOINT URL</label>
-            <input id="customAiEndpointInput" type="url" placeholder="https://api.xyrox-utilities.com/v1/infer"
-              class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs font-mono" />
-            <button id="saveAiEndpointBtn" type="button" class="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold">
-              Save Endpoint Configuration
-            </button>
-          </div>
-
-          <div class="p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5 space-y-1.5 font-mono text-[11px]">
-            <div class="flex justify-between"><span class="text-zinc-400">ENGINE:</span><span>XYROX-NEURAL-v1</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">CREATOR:</span><span>xyrox6789</span></div>
-            <div class="flex justify-between"><span class="text-zinc-400">MODE:</span><span id="aiTelemetryMode" class="text-emerald-500">LOCAL SKELETON</span></div>
+          <!-- Preferences Card -->
+          <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-sm font-semibold text-white mb-4">Preferences</h3>
+            
+            <div class="space-y-4">
+               <div>
+                  <label class="block text-xs text-zinc-400 mb-2">Firebase Configuration (For true cloud sync)</label>
+                  <textarea placeholder='{"apiKey": "...", "authDomain": "..."}' class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs font-mono text-zinc-400 h-24 focus:outline-none focus:border-zinc-500 resize-none"></textarea>
+                  <p class="text-[10px] text-zinc-500 mt-1">Leave blank to use local browser storage and mocked authentication.</p>
+               </div>
+            </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </section>
-
-    <!-- ================= OFFICIAL XYROX-UTILITIES FOOTER ================= -->
-    <footer class="mt-12 pt-6 border-t border-zinc-200/80 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-      <div class="flex items-center gap-2.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="font-mono font-semibold text-zinc-800 dark:text-zinc-200">© 2026 XYROX-UTILITIES.</span>
-        <span>All rights reserved. Engineered by <strong class="text-zinc-900 dark:text-white font-mono">xyrox6789</strong>.</span>
-      </div>
-      <div class="flex items-center gap-4 font-mono text-[11px]">
-        <span>SYSTEM: ONLINE</span>
-        <span>•</span>
-        <span>BUILD: XYROX-LABS-6789</span>
-      </div>
-    </footer>
-
-  </div>
-
-  <!-- ================= FULLSCREEN IPAD DESK CLOCK OVERLAY ================= -->
-  <div id="deskModeOverlay" class="fixed inset-0 z-50 hidden bg-zinc-950 text-white flex-col items-center justify-between p-8 select-none">
-    <div class="w-full flex items-center justify-between">
-      <span class="font-mono text-xs tracking-widest uppercase text-zinc-500">XYROX-UTILITIES // DESK MODE</span>
-      <button id="exitDeskModeBtn" type="button" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-mono">
-        Exit Fullscreen ✕
-      </button>
     </div>
-    <div class="text-center my-auto">
-      <div id="deskModeClock" class="font-mono text-7xl sm:text-9xl font-bold tracking-tighter tabular-nums">00:00</div>
-      <p id="deskModeTimerReadout" class="font-mono text-xl sm:text-2xl text-emerald-400 mt-4">Focus Timer: 25:00</p>
-      <p id="deskModeObjective" class="text-sm text-zinc-400 mt-3 max-w-md mx-auto"></p>
-    </div>
-    <div class="text-xs font-mono text-zinc-600">Engineered by xyrox6789</div>
-  </div>
+  </main>
 
-  <!-- ================= SIGN-IN & CLOUD SYNC MODAL ================= -->
-  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="xy-card rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-base font-semibold">Xyrox Account &amp; Cloud Sync</h3>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400">Optional sign-in. Log in as <code class="font-mono text-emerald-500">xyrox6789</code> for Founder powers.</p>
-        </div>
-        <button id="closeAuthModalBtn" type="button" class="p-1.5 rounded-lg text-zinc-400 hover:text-white">✕</button>
-      </div>
-
-      <form id="authForm" class="space-y-3">
-        <div>
-          <label class="block text-xs font-mono uppercase text-zinc-400 mb-1">Username / Handle</label>
-          <input id="authUsernameInput" type="text" required placeholder="e.g. xyrox6789"
-            class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-sm" />
-        </div>
-        <div>
-          <label class="block text-xs font-mono uppercase text-zinc-400 mb-1">Sync Passkey / PIN</label>
-          <input id="authPinInput" type="password" required placeholder="••••"
-            class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-sm" />
-        </div>
-        <div>
-          <label class="block text-xs font-mono uppercase text-zinc-400 mb-1">Optional Firebase Cloud DB URL (Cross-Device Sync)</label>
-          <input id="authCloudUrlInput" type="url" placeholder="https://your-project-default-rtdb.firebaseio.com"
-            class="w-full px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-xs font-mono" />
-        </div>
-        <div class="flex gap-2 pt-2">
-          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold">
-            Sign In &amp; Sync
-          </button>
-          <button id="logoutBtn" type="button" class="px-4 py-2.5 rounded-xl bg-rose-500/10 text-rose-500 text-xs font-semibold">
-            Sign Out
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ================= JAVASCRIPT ENGINE (All Parts Combined) ================= -->
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    /********************************************************************
-     * 1. GLOBAL STATE & PERSISTENT STORAGE (XYROX CORE)
-     ********************************************************************/
-    const XY_KEY = 'xyrox_utilities_state_v2';
+    // --- 1. Three.js Premium 3D Background ---
+    function init3DBackground() {
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
 
-    const defaultState = {
-      theme: 'dark',
-      use24Hour: false,
-      user: { username: 'Operator', loggedIn: false, isFounder: false, cloudUrl: '' },
-      intention: '',
-      sessionsToday: 0,
-      focusHistory: {},
-      tasks: [
-        { id: 't1', text: 'Complete 25m deep work session on Xyrox Utilities', type: 'habit', done: false, streak: 4 },
-        { id: 't2', text: 'Review community feedback & Discord updates', type: 'habit', done: false, streak: 2 },
-        { id: 't3', text: 'Deploy upgraded XYROX-UTILITIES v2.0 to Vercel', type: 'task', done: true, streak: 0 }
-      ],
-      goals: [
-        { id: 'g1', title: 'Launch Custom Xyrox AI Model', percent: 45 },
-        { id: 'g2', title: 'Grow Xyrox Discord Community', percent: 70 }
-      ],
-      countdowns: [
-        { id: 'c1', title: 'Xyrox v3.0 Major Release', date: '2026-12-31' }
-      ],
-      notes: [],
-      calendarEvents: {},
-      chatMessages: [],
-      pinnedChat: 'Welcome to XYROX-UTILITIES Global Chat — Engineered by xyrox6789.'
-    };
-
-    let xyState = JSON.parse(JSON.stringify(defaultState));
-
-    function loadXyState() {
-      try {
-        const raw = localStorage.getItem(XY_KEY);
-        if (raw) {
-          xyState = { ...defaultState, ...JSON.parse(raw) };
-        }
-      } catch (e) {
-        console.warn('Storage load issue:', e);
+      // Create a sophisticated particle mesh
+      const geometry = new THREE.BufferGeometry();
+      const count = 1500;
+      const positions = new Float32Array(count * 3);
+      for(let i=0; i<count*3; i++) {
+        positions[i] = (Math.random() - 0.5) * 20;
       }
-      document.documentElement.classList.toggle('dark', xyState.theme === 'dark');
-    }
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const material = new THREE.PointsMaterial({
+        size: 0.03,
+        color: 0x888888,
+        transparent: true,
+        opacity: 0.6
+      });
+      
+      const particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+      camera.position.z = 5;
 
-    function saveXyState() {
-      try {
-        localStorage.setItem(XY_KEY, JSON.stringify(xyState));
-      } catch (e) {}
-      if (typeof window.syncToCloudIfEnabled === 'function') {
-        window.syncToCloudIfEnabled();
+      let mouseX = 0, mouseY = 0;
+      document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        particles.rotation.y += 0.0005;
+        particles.rotation.x += 0.0002;
+        
+        // Subtle mouse reactivity
+        particles.rotation.y += mouseX * 0.001;
+        particles.rotation.x -= mouseY * 0.001;
+        
+        renderer.render(scene, camera);
       }
-    }
-
-    /********************************************************************
-     * 2. CUSTOM 3D ARCHITECTURAL PARTICLE-WAVE BACKGROUND
-     ********************************************************************/
-    function initXyrox3DCanvas() {
-      const canvas = document.getElementById('xyrox3dCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      let width = (canvas.width = window.innerWidth);
-      let height = (canvas.height = window.innerHeight);
-      let mouseX = width / 2;
-      let mouseY = height / 2;
-      let tick = 0;
+      animate();
 
       window.addEventListener('resize', () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-      });
-      window.addEventListener('pointermove', e => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-      });
-
-      function render3D() {
-        ctx.clearRect(0, 0, width, height);
-        const isDark = document.documentElement.classList.contains('dark');
-        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(24,24,27,0.20)';
-
-        const cols = 22;
-        const rows = 14;
-        const spacingX = width / (cols - 1);
-        const spacingY = height / (rows - 1);
-
-        tick += 0.018;
-
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            const baseX = c * spacingX;
-            const baseY = r * spacingY;
-            const dx = mouseX - baseX;
-            const dy = mouseY - baseY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const wave = Math.sin(c * 0.45 + tick) * Math.cos(r * 0.45 + tick) * 10;
-            const pull = Math.max(0, (220 - dist) / 220) * 14;
-
-            const x = baseX + (dx / (dist || 1)) * pull;
-            const y = baseY + wave;
-            const radius = 1.2 + Math.max(0, (200 - dist) / 200) * 1.4;
-
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-        requestAnimationFrame(render3D);
-      }
-      render3D();
-    }
-
-    /********************************************************************
-     * 3. NAVIGATION TABS & LIVE CLOCK
-     ********************************************************************/
-    function switchWorkspaceTab(tabId) {
-      document.querySelectorAll('.workspace-section').forEach(sec => sec.classList.add('hidden'));
-      const target = document.getElementById(`tab-${tabId}`);
-      if (target) target.classList.remove('hidden');
-
-      document.querySelectorAll('.xy-nav-btn').forEach(btn => {
-        const active = btn.getAttribute('data-tab') === tabId;
-        btn.className = active
-          ? 'xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
-          : 'xy-nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white';
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
       });
     }
 
-    function updateLiveClock() {
-      const now = new Date();
-      const h24 = now.getHours();
-      const mins = String(now.getMinutes()).padStart(2, '0');
-      const secs = String(now.getSeconds()).padStart(2, '0');
+    // --- 2. Navigation & Tabs ---
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-      const dateStr = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-      document.getElementById('topDateReadout').textContent = dateStr.toUpperCase();
-
-      let hDisplay = h24;
-      const amPmEl = document.getElementById('liveClockAmPm');
-      if (xyState.use24Hour) {
-        hDisplay = String(h24).padStart(2, '0');
-        amPmEl.classList.add('hidden');
-      } else {
-        amPmEl.classList.remove('hidden');
-        amPmEl.textContent = h24 >= 12 ? 'PM' : 'AM';
-        hDisplay = h24 % 12 || 12;
-      }
-
-      const timeStr = `${hDisplay}:${mins}`;
-      document.getElementById('liveClockMain').textContent = timeStr;
-      document.getElementById('liveClockSeconds').textContent = secs;
-      document.getElementById('deskModeClock').textContent = `${timeStr}:${secs}`;
-
-      const greet = h24 < 12 ? 'Good morning' : h24 < 17 ? 'Good afternoon' : 'Good evening';
-      document.getElementById('greetingText').textContent = greet;
-    }
-
-    /********************************************************************
-     * 4. DUAL POMODORO & COUNT-UP STOPWATCH ENGINE
-     ********************************************************************/
-    const tModes = {
-      focus: { label: 'DEEP FOCUS BLOCK', secs: 25 * 60 },
-      short: { label: 'SHORT RECOVERY', secs: 5 * 60 },
-      long: { label: 'EXTENDED BREAK', secs: 15 * 60 },
-      stopwatch: { label: 'OPEN COUNT-UP STOPWATCH', secs: 0 }
-    };
-
-    let timerEngine = {
-      mode: 'focus',
-      seconds: 25 * 60,
-      running: false,
-      interval: null
-    };
-
-    function renderTimer() {
-      const m = String(Math.floor(timerEngine.seconds / 60)).padStart(2, '0');
-      const s = String(timerEngine.seconds % 60).padStart(2, '0');
-      const text = `${m}:${s}`;
-      document.getElementById('timerReadout').textContent = text;
-      document.getElementById('deskModeTimerReadout').textContent = `${tModes[timerEngine.mode].label}: ${text}`;
-      document.getElementById('timerModeSubLabel').textContent = tModes[timerEngine.mode].label;
-      document.getElementById('sessionCountDisplay').textContent = xyState.sessionsToday;
-      document.getElementById('timerStartBtn').disabled = timerEngine.running;
-      document.getElementById('timerPauseBtn').disabled = !timerEngine.running;
-      document.getElementById('timerAdjustRow').classList.toggle('invisible', timerEngine.running || timerEngine.mode === 'stopwatch');
-    }
-
-    function startTimerEngine() {
-      if (timerEngine.running) return;
-      timerEngine.running = true;
-      renderTimer();
-      timerEngine.interval = setInterval(() => {
-        if (timerEngine.mode === 'stopwatch') {
-          timerEngine.seconds += 1;
-          if (timerEngine.seconds % 60 === 0) recordFocusMinute(1);
-          renderTimer();
-        } else {
-          if (timerEngine.seconds > 0) {
-            timerEngine.seconds -= 1;
-            if (timerEngine.mode === 'focus' && timerEngine.seconds % 60 === 0) recordFocusMinute(1);
-            renderTimer();
-          } else {
-            clearInterval(timerEngine.interval);
-            timerEngine.running = false;
-            if (timerEngine.mode === 'focus') {
-              xyState.sessionsToday += 1;
-              saveXyState();
-            }
-            timerEngine.seconds = tModes[timerEngine.mode].secs;
-            renderTimer();
-          }
-        }
-      }, 1000);
-    }
-
-    function recordFocusMinute(mins) {
-      const d = new Date().toISOString().slice(0, 10);
-      xyState.focusHistory[d] = (xyState.focusHistory[d] || 0) + mins;
-      saveXyState();
-    }
-
-    /********************************************************************
-     * 5. HABITS, TASKS, GOALS & COUNTDOWNS
-     ********************************************************************/
-    let currentTaskFilter = 'all';
-
-    function renderTasks() {
-      const list = document.getElementById('taskListEl');
-      const total = xyState.tasks.length;
-      const done = xyState.tasks.filter(t => t.done).length;
-      const pct = total ? Math.round((done / total) * 100) : 0;
-
-      document.getElementById('taskProgressLabel').textContent = `${done}/${total} (${pct}%)`;
-      document.getElementById('taskProgressBar').style.width = `${pct}%`;
-
-      list.innerHTML = '';
-      xyState.tasks
-        .filter(t => (currentTaskFilter === 'all' ? true : t.type === currentTaskFilter))
-        .forEach(item => {
-          const li = document.createElement('li');
-          li.className = 'flex items-center justify-between gap-2 p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5';
-          li.innerHTML = `
-            <button type="button" class="flex items-center gap-2.5 flex-1 text-left">
-              <span class="w-4 h-4 rounded flex items-center justify-center border ${item.done ? 'bg-emerald-500 border-emerald-500 text-zinc-950' : 'border-zinc-400'} text-[10px] font-bold">
-                ${item.done ? '✓' : ''}
-              </span>
-              <span class="text-xs sm:text-sm ${item.done ? 'line-through text-zinc-400' : ''}">${item.text}</span>
-              ${item.type === 'habit' ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">🔥 ${item.streak || 0}d</span>` : ''}
-            </button>
-            <button type="button" class="del-task text-xs text-zinc-400 hover:text-rose-500 px-1.5">✕</button>
-          `;
-          li.querySelector('button').addEventListener('click', () => {
-            item.done = !item.done;
-            if (item.type === 'habit') item.streak = Math.max(0, (item.streak || 0) + (item.done ? 1 : -1));
-            saveXyState();
-            renderTasks();
-          });
-          li.querySelector('.del-task').addEventListener('click', () => {
-            xyState.tasks = xyState.tasks.filter(x => x.id !== item.id);
-            saveXyState();
-            renderTasks();
-          });
-          list.appendChild(li);
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        
+        // Update Tabs
+        tabContents.forEach(tc => tc.classList.add('hidden'));
+        document.getElementById(`sec-${target}`).classList.remove('hidden');
+        
+        // Update Active States (Desktop)
+        document.querySelectorAll('#desktopNav .nav-btn').forEach(b => {
+          b.classList.remove('bg-white/10', 'text-white');
+          b.classList.add('text-zinc-400');
         });
-    }
-
-    function renderGoalsAndCountdowns() {
-      const gEl = document.getElementById('goalsListEl');
-      gEl.innerHTML = '';
-      xyState.goals.forEach(g => {
-        const div = document.createElement('div');
-        div.className = 'space-y-1';
-        div.innerHTML = `
-          <div class="flex justify-between text-xs">
-            <span class="font-medium">${g.title}</span>
-            <div class="flex items-center gap-1.5 font-mono">
-              <button type="button" class="inc-goal text-emerald-500 hover:underline">+5%</button>
-              <span>${g.percent}%</span>
-            </div>
-          </div>
-          <div class="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
-            <div class="h-full bg-zinc-900 dark:bg-white transition-all" style="width:${g.percent}%"></div>
-          </div>
-        `;
-        div.querySelector('.inc-goal').addEventListener('click', () => {
-          g.percent = (g.percent + 5) > 100 ? 0 : g.percent + 5;
-          saveXyState();
-          renderGoalsAndCountdowns();
-        });
-        gEl.appendChild(div);
-      });
-
-      const cEl = document.getElementById('countdownsListEl');
-      cEl.innerHTML = '';
-      xyState.countdowns.forEach(c => {
-        const diffDays = Math.ceil((new Date(c.date) - new Date()) / (1000 * 60 * 60 * 24));
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between p-2.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5 text-xs';
-        row.innerHTML = `
-          <span class="font-medium truncate pr-2">${c.title}</span>
-          <span class="font-mono font-bold text-emerald-500 whitespace-nowrap">${diffDays >= 0 ? diffDays + 'd left' : 'Passed'}</span>
-        `;
-        cEl.appendChild(row);
-      });
-    }
-
-    function syncUserIdentityUI() {
-      const u = xyState.user;
-      document.getElementById('heroUserName').textContent = u.username || 'Operator';
-      document.getElementById('navUserLabel').textContent = u.loggedIn ? u.username : 'Sign In';
-      document.getElementById('founderHeroBadge').classList.toggle('hidden', !u.isFounder);
-      document.getElementById('dailyIntentionInput').value = xyState.intention || '';
-      document.getElementById('deskModeObjective').textContent = xyState.intention || '';
-    }
-
-    /********************************************************************
-     * 6. INITIALIZATION & EVENT WIRING
-     ********************************************************************/
-    window.addEventListener('DOMContentLoaded', () => {
-      loadXyState();
-      initXyrox3DCanvas();
-      syncUserIdentityUI();
-      updateLiveClock();
-      setInterval(updateLiveClock, 1000);
-      renderTimer();
-      renderTasks();
-      renderGoalsAndCountdowns();
-
-      // Workspace Tabs
-      document.querySelectorAll('.xy-nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchWorkspaceTab(btn.getAttribute('data-tab')));
-      });
-
-      // Theme Toggle
-      document.getElementById('themeToggleBtn').addEventListener('click', () => {
-        const isDark = document.documentElement.classList.toggle('dark');
-        xyState.theme = isDark ? 'dark' : 'light';
-        saveXyState();
-      });
-
-      // 12H/24H Clock
-      document.getElementById('toggleClockFormatBtn').addEventListener('click', () => {
-        xyState.use24Hour = !xyState.use24Hour;
-        saveXyState();
-        updateLiveClock();
-      });
-
-      // Intention Input
-      document.getElementById('dailyIntentionInput').addEventListener('input', e => {
-        xyState.intention = e.target.value;
-        document.getElementById('deskModeObjective').textContent = xyState.intention;
-        saveXyState();
-        const badge = document.getElementById('intentionSavedIndicator');
-        badge.classList.remove('opacity-0');
-        setTimeout(() => badge.classList.add('opacity-0'), 900);
-      });
-
-      // Timer Events
-      document.getElementById('timerStartBtn').addEventListener('click', startTimerEngine);
-      document.getElementById('timerPauseBtn').addEventListener('click', () => {
-        clearInterval(timerEngine.interval);
-        timerEngine.running = false;
-        renderTimer();
-      });
-      document.getElementById('timerResetBtn').addEventListener('click', () => {
-        clearInterval(timerEngine.interval);
-        timerEngine.running = false;
-        timerEngine.seconds = tModes[timerEngine.mode].secs;
-        renderTimer();
-      });
-      document.getElementById('timerMinusBtn').addEventListener('click', () => {
-        if (!timerEngine.running && timerEngine.mode !== 'stopwatch') {
-          timerEngine.seconds = Math.max(60, timerEngine.seconds - 60);
-          renderTimer();
+        if(btn.parentNode.id === 'desktopNav') {
+          btn.classList.add('bg-white/10', 'text-white');
+          btn.classList.remove('text-zinc-400');
         }
       });
-      document.getElementById('timerPlusBtn').addEventListener('click', () => {
-        if (!timerEngine.running && timerEngine.mode !== 'stopwatch') {
-          timerEngine.seconds += 60;
-          renderTimer();
-        }
-      });
-      document.querySelectorAll('.tmode-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          clearInterval(timerEngine.interval);
-          timerEngine.running = false;
-          timerEngine.mode = btn.getAttribute('data-tmode');
-          timerEngine.seconds = tModes[timerEngine.mode].secs;
-          document.querySelectorAll('.tmode-btn').forEach(b => {
-            b.className = b === btn
-              ? 'tmode-btn py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
-              : 'tmode-btn py-1.5 rounded-lg text-xs font-medium text-zinc-500';
-          });
-          renderTimer();
-        });
-      });
-
-      // Task Events
-      document.getElementById('taskForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const inp = document.getElementById('taskInput');
-        const type = document.getElementById('taskTypeSelect').value;
-        if (!inp.value.trim()) return;
-        xyState.tasks.unshift({ id: 't-' + Date.now(), text: inp.value.trim(), type, done: false, streak: 0 });
-        inp.value = '';
-        saveXyState();
-        renderTasks();
-      });
-      document.querySelectorAll('.tfilter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          currentTaskFilter = btn.getAttribute('data-tfilter');
-          renderTasks();
-        });
-      });
-      document.getElementById('clearDoneTasksBtn').addEventListener('click', () => {
-        xyState.tasks = xyState.tasks.filter(t => !(t.type === 'task' && t.done));
-        saveXyState();
-        renderTasks();
-      });
-
-      // Goals & Countdowns Forms
-      document.getElementById('addGoalToggleBtn').addEventListener('click', () => {
-        document.getElementById('addGoalForm').classList.toggle('hidden');
-      });
-      document.getElementById('addGoalForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const title = document.getElementById('goalTitleInput').value.trim();
-        const percent = Number(document.getElementById('goalPercentInput').value) || 0;
-        if (title) {
-          xyState.goals.push({ id: 'g-' + Date.now(), title, percent });
-          saveXyState();
-          renderGoalsAndCountdowns();
-          e.target.reset();
-          e.target.classList.add('hidden');
-        }
-      });
-
-      document.getElementById('addCountdownToggleBtn').addEventListener('click', () => {
-        document.getElementById('addCountdownForm').classList.toggle('hidden');
-      });
-      document.getElementById('addCountdownForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const title = document.getElementById('cdTitleInput').value.trim();
-        const date = document.getElementById('cdDateInput').value;
-        if (title && date) {
-          xyState.countdowns.push({ id: 'c-' + Date.now(), title, date });
-          saveXyState();
-          renderGoalsAndCountdowns();
-          e.target.reset();
-          e.target.classList.add('hidden');
-        }
-      });
-
-      // Desk Mode
-      const deskOverlay = document.getElementById('deskModeOverlay');
-      const openDesk = () => { deskOverlay.classList.remove('hidden'); deskOverlay.classList.add('flex'); };
-      const closeDesk = () => { deskOverlay.classList.add('hidden'); deskOverlay.classList.remove('flex'); };
-      document.getElementById('enterDeskModeBtn').addEventListener('click', openDesk);
-      document.getElementById('mobileDeskModeBtn').addEventListener('click', openDesk);
-      document.getElementById('exitDeskModeBtn').addEventListener('click', closeDesk);
-
-      // Auth Modal
-      const authModal = document.getElementById('authModal');
-      document.getElementById('openAuthModalBtn').addEventListener('click', () => {
-        document.getElementById('authUsernameInput').value = xyState.user.username;
-        document.getElementById('authCloudUrlInput').value = xyState.user.cloudUrl || '';
-        authModal.classList.remove('hidden');
-        authModal.classList.add('flex');
-      });
-      document.getElementById('closeAuthModalBtn').addEventListener('click', () => {
-        authModal.classList.add('hidden');
-        authModal.classList.remove('flex');
-      });
-      document.getElementById('authForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const handle = document.getElementById('authUsernameInput').value.trim() || 'Operator';
-        const cloudUrl = document.getElementById('authCloudUrlInput').value.trim();
-        xyState.user = {
-          username: handle,
-          loggedIn: true,
-          isFounder: handle.toLowerCase() === 'xyrox6789',
-          cloudUrl
-        };
-        saveXyState();
-        syncUserIdentityUI();
-        authModal.classList.add('hidden');
-        authModal.classList.remove('flex');
-      });
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        xyState.user = { username: 'Operator', loggedIn: false, isFounder: false, cloudUrl: '' };
-        saveXyState();
-        syncUserIdentityUI();
-        authModal.classList.add('hidden');
-        authModal.classList.remove('flex');
-      });
-
-      // Initialize Parts B & C Modules
-      initPartBAudioStudio();
-      initPartBPlannerAndHeatmap();
-      initPartCUtilitiesChatAI();
     });
 
-    /********************************************************************
-     * 7. PART B MODULE 1: NCS SYNTH DECK & 8-CHANNEL SOUNDSCAPE STUDIO
-     ********************************************************************/
-    const ncsLibrary = {
-      chill: [
-        { id: 'c1', title: 'Cybernetic Rain (Lo-Fi VIP)', artist: 'Xyrox Audio Labs', bpm: 78, root: 220, wave: 'triangle', prog: [0, 3, 7, 10] },
-        { id: 'c2', title: 'Midnight Vercel Deploy', artist: 'xyrox6789 Originals', bpm: 72, root: 196, wave: 'sine', prog: [0, 5, 7, 12] },
-        { id: 'c3', title: 'Tokyo Terminal Drift', artist: 'Xyrox Synth Division', bpm: 84, root: 246.94, wave: 'triangle', prog: [0, 4, 7, 11] },
-        { id: 'c4', title: 'Starlight Coding Session', artist: 'NCS Chill Collective', bpm: 76, root: 174.61, wave: 'sine', prog: [0, 3, 5, 10] },
-        { id: 'c5', title: 'Deep Space Neural Pad', artist: 'Xyrox Ambient Core', bpm: 68, root: 164.81, wave: 'sine', prog: [0, 7, 12, 15] }
-      ],
-      energetic: [
-        { id: 'e1', title: 'Hyperdrive Protocol (NCS Electronic)', artist: 'Xyrox Bass Labs', bpm: 128, root: 261.63, wave: 'sawtooth', prog: [0, 7, 12, 10] },
-        { id: 'e2', title: 'Quantum Horizon VIP', artist: 'xyrox6789 Electro', bpm: 132, root: 293.66, wave: 'square', prog: [0, 3, 7, 12] },
-        { id: 'e3', title: 'Apex Competitive Flow', artist: 'NCS Gaming Division', bpm: 126, root: 220, wave: 'sawtooth', prog: [0, 5, 7, 10] },
-        { id: 'e4', title: 'Velocity Synthwave 6789', artist: 'Xyrox Retro Engine', bpm: 120, root: 196, wave: 'sawtooth', prog: [0, 4, 7, 11] },
-        { id: 'e5', title: 'Overclocked Mainframe', artist: 'Xyrox Core Systems', bpm: 135, root: 329.63, wave: 'square', prog: [0, 3, 5, 7] }
-      ]
-    };
+    // --- 3. Clock & Date ---
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase();
+      document.getElementById('mainClock').textContent = timeStr;
+      document.getElementById('mainDate').textContent = dateStr;
+      
+      const hr = now.getHours();
+      document.getElementById('greetText').textContent = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    const soundscapeChannels = [
-      { id: 'rain', name: '🌧️ Heavy Rain on Glass', type: 'pink', filterFreq: 950 },
-      { id: 'thunder', name: '⛈️ Distant Rolling Thunder', type: 'brown', filterFreq: 140 },
-      { id: 'vinyl', name: '📻 Warm Vinyl Crackle', type: 'white', filterFreq: 4200 },
-      { id: 'fire', name: '🔥 Cozy Fireplace', type: 'brown', filterFreq: 380 },
-      { id: 'forest', name: '🌲 Night Forest Wind', type: 'pink', filterFreq: 620 },
-      { id: 'coffee', name: '☕ Coffee Shop Murmur', type: 'pink', filterFreq: 480 },
-      { id: 'brown', name: '🌊 Deep Brown Focus Noise', type: 'brown', filterFreq: 260 },
-      { id: 'pink', name: '✨ Soft Pink Study Noise', type: 'pink', filterFreq: 1400 }
+    // --- 4. Custom Focus Timer (Direct Input) ---
+    let timerInterval;
+    let timerRunning = false;
+    const minInput = document.getElementById('timerMinInput');
+    const secInput = document.getElementById('timerSecInput');
+    const btnStart = document.getElementById('btnStartTimer');
+    const btnReset = document.getElementById('btnResetTimer');
+
+    function formatInput(inp) {
+      let val = parseInt(inp.value) || 0;
+      if(val < 0) val = 0;
+      if(inp.id === 'timerSecInput' && val > 59) val = 59;
+      inp.value = val.toString().padStart(2, '0');
+    }
+
+    minInput.addEventListener('change', () => formatInput(minInput));
+    secInput.addEventListener('change', () => formatInput(secInput));
+
+    btnStart.addEventListener('click', () => {
+      if(timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        btnStart.textContent = "Resume Focus";
+        minInput.disabled = false; secInput.disabled = false;
+      } else {
+        let totalSecs = (parseInt(minInput.value) * 60) + parseInt(secInput.value);
+        if(totalSecs <= 0) return;
+        
+        timerRunning = true;
+        btnStart.textContent = "Pause Focus";
+        minInput.disabled = true; secInput.disabled = true;
+        
+        timerInterval = setInterval(() => {
+          totalSecs--;
+          minInput.value = Math.floor(totalSecs / 60).toString().padStart(2, '0');
+          secInput.value = (totalSecs % 60).toString().padStart(2, '0');
+          
+          if(totalSecs <= 0) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            btnStart.textContent = "Start Focus";
+            minInput.disabled = false; secInput.disabled = false;
+          }
+        }, 1000);
+      }
+    });
+
+    btnReset.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      btnStart.textContent = "Start Focus";
+      minInput.value = "25"; secInput.value = "00";
+      minInput.disabled = false; secInput.disabled = false;
+    });
+
+    // --- 5. Goals Data ---
+    const goals = [
+      { title: 'Launch XYROX v3.0', progress: 80 },
+      { title: 'Deploy Custom AI', progress: 35 }
+    ];
+    function renderGoals() {
+      const list = document.getElementById('goalList');
+      list.innerHTML = goals.map(g => `
+        <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+          <div class="flex justify-between text-sm mb-2"><span class="text-white">${g.title}</span><span class="text-zinc-500 font-mono">${g.progress}%</span></div>
+          <div class="w-full bg-zinc-800 rounded-full h-1.5"><div class="bg-white h-1.5 rounded-full" style="width: ${g.progress}%"></div></div>
+        </div>
+      `).join('');
+    }
+    renderGoals();
+
+    // --- 6. 15 NCS Tracks & Audio Synth ---
+    const tracklist = [
+      { title: "Neon Genesis", genre: "Synthwave", bpm: 110 }, { title: "Vercel Deploy", genre: "Chillstep", bpm: 90 },
+      { title: "Cyber Drift", genre: "Phonk", bpm: 125 }, { title: "Cloud Sync", genre: "Lo-Fi", bpm: 80 },
+      { title: "System Override", genre: "Electronic", bpm: 130 }, { title: "Neural Net", genre: "Ambient", bpm: 100 },
+      { title: "Dark Mode", genre: "Trap", bpm: 140 }, { title: "Terminal Velocity", genre: "Drum & Bass", bpm: 170 },
+      { title: "Code Compile", genre: "Chillstep", bpm: 95 }, { title: "Zero Latency", genre: "House", bpm: 128 },
+      { title: "Silicon Soul", genre: "Lo-Fi", bpm: 85 }, { title: "Data Stream", genre: "Techno", bpm: 135 },
+      { title: "Quantum Bit", genre: "Synthwave", bpm: 115 }, { title: "Logic Gate", genre: "Electronic", bpm: 122 },
+      { title: "Runtime Error", genre: "Dubstep", bpm: 145 }
     ];
 
+    const tlTable = document.getElementById('tracklistTable');
+    tracklist.forEach((t, i) => {
+      const tr = document.createElement('tr');
+      tr.className = "border-b border-white/5 hover:bg-white/5 cursor-pointer transition";
+      tr.innerHTML = `<td class="py-3 px-2 text-zinc-500 font-mono w-8">${i+1}</td><td class="py-3 font-medium text-white">${t.title}</td><td class="py-3 text-zinc-500 text-xs">${t.genre}</td><td class="py-3 text-zinc-500 text-xs text-right">${t.bpm} BPM</td>`;
+      tr.addEventListener('click', () => playTrack(i));
+      tlTable.appendChild(tr);
+    });
+
+    let currentOsc = null;
     let audioCtx = null;
-    let activePlaylist = 'chill';
-    let currentTrackIdx = 0;
-    let isTrackPlaying = false;
-    let ncsSequencerTimer = null;
-    let ncsMasterVolume = 0.7;
-    let activeSoundscapeNodes = {};
-
-    function ensureAudioCtx() {
-      if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
+    let isPlaying = false;
+    
+    function playTrack(idx) {
+      const t = tracklist[idx];
+      document.getElementById('nowPlayingTitle').textContent = t.title;
+      document.getElementById('nowPlayingArtist').textContent = `Xyrox Audio • ${t.genre} • ${t.bpm} BPM`;
+      
+      if(!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
       }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      if(currentOsc) { currentOsc.stop(); currentOsc.disconnect(); }
+      
+      // Procedural Synth Beep to simulate track start
+      currentOsc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      currentOsc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+      currentOsc.frequency.setValueAtTime(220 + (idx*10), audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+      
+      currentOsc.connect(gain);
+      gain.connect(audioCtx.destination);
+      currentOsc.start();
+      
+      isPlaying = true;
+      document.getElementById('playPauseMusicBtn').innerHTML = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
     }
 
-    function playCurrentNcsTrack() {
-      ensureAudioCtx();
-      stopNcsTrackOnly();
-      isTrackPlaying = true;
-      const track = ncsLibrary[activePlaylist][currentTrackIdx];
-      document.getElementById('ncsTrackTitle').textContent = track.title;
-      document.getElementById('ncsTrackArtist').textContent = `${track.artist} • ${track.bpm} BPM`;
-      document.getElementById('ncsTrackGenreBadge').textContent = activePlaylist === 'chill' ? 'CHILL FOCUS NCS' : 'ENERGETIC NCS';
-      document.getElementById('ncsPlayPauseBtn').textContent = '⏸ Pause Track';
-      document.getElementById('audioLiveDot').className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping';
-
-      let step = 0;
-      const stepMs = (60 / track.bpm / 2) * 1000;
-
-      ncsSequencerTimer = setInterval(() => {
-        if (!isTrackPlaying || !audioCtx) return;
-        const now = audioCtx.currentTime;
-        const semitone = track.prog[step % track.prog.length];
-        const octaveShift = (step % 8 === 7) ? 12 : 0;
-        const freq = track.root * Math.pow(2, (semitone + octaveShift) / 12);
-
-        const osc = audioCtx.createOscillator();
-        const filter = audioCtx.createBiquadFilter();
-        const gain = audioCtx.createGain();
-
-        osc.type = track.wave;
-        osc.frequency.setValueAtTime(freq, now);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(activePlaylist === 'chill' ? 950 : 2200, now);
-
-        const peakGain = Math.max(0.001, ncsMasterVolume * (activePlaylist === 'chill' ? 0.14 : 0.11));
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(peakGain, now + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + (stepMs / 1000) * 0.92);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + (stepMs / 1000));
-
-        // Animate Equalizer Bars
-        document.querySelectorAll('#ncsEqBars span').forEach(bar => {
-          bar.style.height = `${Math.floor(Math.random() * 22) + 6}px`;
-        });
-
-        step++;
-      }, stepMs);
-
-      renderNcsTracklist();
-    }
-
-    function stopNcsTrackOnly() {
-      isTrackPlaying = false;
-      if (ncsSequencerTimer) {
-        clearInterval(ncsSequencerTimer);
-        ncsSequencerTimer = null;
-      }
-      const btn = document.getElementById('ncsPlayPauseBtn');
-      if (btn) btn.textContent = '▶ Play Track';
-      document.querySelectorAll('#ncsEqBars span').forEach(bar => { bar.style.height = '6px'; });
-    }
-
-    function renderNcsTracklist() {
-      const container = document.getElementById('ncsTracklistEl');
-      if (!container) return;
-      const list = ncsLibrary[activePlaylist];
-      document.getElementById('ncsTrackCountLabel').textContent = `${list.length} Tracks`;
-      container.innerHTML = '';
-
-      list.forEach((tr, idx) => {
-        const active = idx === currentTrackIdx;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left text-xs transition ${
-          active
-            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold'
-            : 'bg-zinc-100/70 dark:bg-zinc-900/60 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/70'
-        }`;
-        btn.innerHTML = `
-          <div class="truncate pr-2">
-            <span>${idx + 1}. ${tr.title}</span>
-            <span class="block text-[10px] opacity-65 font-mono">${tr.artist}</span>
-          </div>
-          <span class="font-mono text-[10px] px-2 py-0.5 rounded border border-current/20">${tr.bpm} BPM</span>
-        `;
-        btn.addEventListener('click', () => {
-          currentTrackIdx = idx;
-          playCurrentNcsTrack();
-        });
-        container.appendChild(btn);
-      });
-    }
-
-    function setSoundscapeChannelVolume(ch, pct) {
-      ensureAudioCtx();
-      const vol = Number(pct) / 100;
-      if (vol <= 0.005) {
-        if (activeSoundscapeNodes[ch.id]) {
-          try { activeSoundscapeNodes[ch.id].source.stop(); } catch (e) {}
-          delete activeSoundscapeNodes[ch.id];
-        }
-        return;
-      }
-
-      if (!activeSoundscapeNodes[ch.id]) {
-        const bufferSize = audioCtx.sampleRate * 2;
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          if (ch.type === 'brown') {
-            data[i] = (lastOut + 0.02 * white) / 1.02;
-            lastOut = data[i];
-            data[i] *= 3.2;
-          } else if (ch.type === 'pink') {
-            data[i] = white * 0.45;
-          } else {
-            data[i] = white * 0.25;
-          }
-        }
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = ch.filterFreq;
-
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.value = vol * 0.25;
-
-        source.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        source.start();
-
-        activeSoundscapeNodes[ch.id] = { source, gainNode };
+    document.getElementById('playPauseMusicBtn').addEventListener('click', () => {
+      if(!audioCtx) playTrack(0);
+      else if(isPlaying) {
+        audioCtx.suspend(); isPlaying = false;
+        document.getElementById('playPauseMusicBtn').innerHTML = `<svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
       } else {
-        activeSoundscapeNodes[ch.id].gainNode.gain.setTargetAtTime(vol * 0.25, audioCtx.currentTime, 0.05);
+        audioCtx.resume(); isPlaying = true;
+        document.getElementById('playPauseMusicBtn').innerHTML = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
       }
-    }
+    });
 
-    function initPartBAudioStudio() {
-      renderNcsTracklist();
+    // Ambient Mixers
+    const ambients = ['Rain', 'Thunder', 'Cafe', 'Brown Noise'];
+    const ambContainer = document.getElementById('ambientSliders');
+    ambients.forEach(a => {
+      ambContainer.innerHTML += `
+        <div>
+          <div class="flex justify-between text-xs text-zinc-400 mb-2"><span>${a}</span><span class="font-mono val-txt">0%</span></div>
+          <input type="range" min="0" max="100" value="0" class="w-full accent-white h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer" oninput="this.previousElementSibling.querySelector('.val-txt').innerText = this.value + '%'" />
+        </div>
+      `;
+    });
 
-      document.querySelectorAll('.playlist-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          activePlaylist = btn.getAttribute('data-playlist');
-          currentTrackIdx = 0;
-          document.querySelectorAll('.playlist-tab-btn').forEach(b => {
-            b.className = b === btn
-              ? 'playlist-tab-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
-              : 'playlist-tab-btn px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-500';
-          });
-          renderNcsTracklist();
-          if (isTrackPlaying) playCurrentNcsTrack();
-        });
-      });
-
-      document.getElementById('ncsPlayPauseBtn').addEventListener('click', () => {
-        if (isTrackPlaying) stopNcsTrackOnly(); else playCurrentNcsTrack();
-      });
-      document.getElementById('ncsPrevBtn').addEventListener('click', () => {
-        const list = ncsLibrary[activePlaylist];
-        currentTrackIdx = (currentTrackIdx - 1 + list.length) % list.length;
-        playCurrentNcsTrack();
-      });
-      document.getElementById('ncsNextBtn').addEventListener('click', () => {
-        const list = ncsLibrary[activePlaylist];
-        currentTrackIdx = (currentTrackIdx + 1) % list.length;
-        playCurrentNcsTrack();
-      });
-      document.getElementById('ncsMasterVol').addEventListener('input', e => {
-        ncsMasterVolume = Number(e.target.value) / 100;
-      });
-
-      const grid = document.getElementById('soundscapeGridEl');
-      grid.innerHTML = '';
-      soundscapeChannels.forEach(ch => {
-        const card = document.createElement('div');
-        card.className = 'p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5 space-y-2';
-        card.innerHTML = `
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-medium">${ch.name}</span>
-            <span class="sc-pct font-mono text-[11px] text-zinc-400">0%</span>
-          </div>
-          <input type="range" min="0" max="100" value="0" data-scid="${ch.id}"
-            class="sc-slider w-full accent-zinc-900 dark:accent-emerald-400 cursor-pointer" />
-        `;
-        const slider = card.querySelector('.sc-slider');
-        const label = card.querySelector('.sc-pct');
-        slider.addEventListener('input', e => {
-          label.textContent = `${e.target.value}%`;
-          setSoundscapeChannelVolume(ch, e.target.value);
-        });
-        grid.appendChild(card);
-      });
-
-      document.getElementById('resetSoundscapesBtn').addEventListener('click', () => {
-        document.querySelectorAll('.sc-slider').forEach(sl => { sl.value = 0; });
-        document.querySelectorAll('.sc-pct').forEach(lb => { lb.textContent = '0%'; });
-        Object.keys(activeSoundscapeNodes).forEach(k => {
-          try { activeSoundscapeNodes[k].source.stop(); } catch (e) {}
-          delete activeSoundscapeNodes[k];
-        });
-      });
-
-      document.getElementById('muteAllAudioBtn').addEventListener('click', () => {
-        stopNcsTrackOnly();
-        document.getElementById('resetSoundscapesBtn').click();
-        document.getElementById('audioLiveDot').className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
-      });
-    }
-
-    /********************************************************************
-     * 8. PART B MODULE 2: INTERACTIVE CALENDAR, NOTES & 365-DAY HEATMAP
-     ********************************************************************/
-    let calViewDate = new Date();
-    let selectedCalIso = new Date().toISOString().slice(0, 10);
-    let activeNoteId = null;
-
-    function renderInteractiveCalendar() {
-      const year = calViewDate.getFullYear();
-      const month = calViewDate.getMonth();
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const todayIso = new Date().toISOString().slice(0, 10);
-
-      document.getElementById('calMonthYearTitle').textContent = calViewDate.toLocaleDateString(undefined, {
-        month: 'long',
-        year: 'numeric'
-      });
-
-      const grid = document.getElementById('calendarDaysGrid');
-      grid.innerHTML = '';
-
-      for (let i = 0; i < firstDay; i++) { grid.appendChild(document.createElement('div')); }
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const hasEvents = (xyState.calendarEvents[iso] || []).length > 0;
-        const isSelected = iso === selectedCalIso;
-        const isToday = iso === todayIso;
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `h-10 rounded-xl flex flex-col items-center justify-center text-xs font-mono relative transition ${
-          isSelected
-            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold shadow-sm'
-            : isToday
-            ? 'border border-emerald-500 text-emerald-500 font-semibold'
-            : 'bg-zinc-100/60 dark:bg-zinc-900/50 hover:bg-zinc-200/70 dark:hover:bg-zinc-800'
-        }`;
-        btn.innerHTML = `<span>${d}</span>${hasEvents ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-0.5"></span>` : ''}`;
-        btn.addEventListener('click', () => {
-          selectedCalIso = iso;
-          renderInteractiveCalendar();
-          renderSelectedDateEvents();
-        });
-        grid.appendChild(btn);
+    // --- 7. Calculator Logic ---
+    let calcVal = '0', calcHist = '';
+    const calcDisp = document.getElementById('calcDisplay');
+    const calcHDisp = document.getElementById('calcHistory');
+    
+    window.calcAction = function(val) {
+      if(val === 'clear') { calcVal = '0'; calcHist = ''; }
+      else if(val === 'del') { calcVal = calcVal.slice(0,-1) || '0'; }
+      else if(val === '=') {
+        try { 
+          calcHist = calcVal + ' =';
+          // Using Function instead of eval for slight safety increase in vanilla
+          calcVal = String(new Function('return ' + calcVal)());
+        } catch(e) { calcVal = 'Error'; }
       }
-    }
-
-    function renderSelectedDateEvents() {
-      document.getElementById('selectedCalDateLabel').textContent = selectedCalIso;
-      const listEl = document.getElementById('calDateEventsList');
-      listEl.innerHTML = '';
-      const items = xyState.calendarEvents[selectedCalIso] || [];
-
-      if (items.length === 0) {
-        listEl.innerHTML = `<li class="text-xs font-mono text-zinc-400 py-1">No scheduled events for this date.</li>`;
-        return;
+      else {
+        if(calcVal === '0' && !isNaN(val)) calcVal = val;
+        else calcVal += val;
       }
-
-      items.forEach((ev, idx) => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 text-xs';
-        li.innerHTML = `<span>• ${ev}</span><button type="button" class="text-zinc-400 hover:text-rose-500 font-mono">✕</button>`;
-        li.querySelector('button').addEventListener('click', () => {
-          xyState.calendarEvents[selectedCalIso].splice(idx, 1);
-          saveXyState();
-          renderInteractiveCalendar();
-          renderSelectedDateEvents();
-        });
-        listEl.appendChild(li);
-      });
-    }
-
-    function ensureStarterNote() {
-      if (!Array.isArray(xyState.notes) || xyState.notes.length === 0) {
-        xyState.notes = [{
-          id: 'n-starter',
-          title: 'XYROX-UTILITIES Master Roadmap',
-          category: 'Ideas',
-          body: '1. Launch Xyrox v2.0 on Vercel\n2. Connect custom Xyrox AI endpoint\n3. Invite Discord community members',
-          updated: new Date().toLocaleDateString()
-        }];
-      }
-      if (!activeNoteId) activeNoteId = xyState.notes[0].id;
-    }
-
-    function renderNotesWorkspace() {
-      ensureStarterNote();
-      const sidebar = document.getElementById('notesListSidebar');
-      sidebar.innerHTML = '';
-
-      xyState.notes.forEach(note => {
-        const isCurrent = note.id === activeNoteId;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `w-full text-left p-3 rounded-xl border transition ${
-          isCurrent
-            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent'
-            : 'bg-zinc-100/70 dark:bg-zinc-900/60 border-zinc-200/60 dark:border-white/5 hover:border-zinc-400'
-        }`;
-        btn.innerHTML = `
-          <div class="flex items-center justify-between text-[10px] font-mono opacity-70 mb-0.5">
-            <span>${note.category}</span><span>${note.updated || ''}</span>
-          </div>
-          <div class="text-xs font-semibold truncate">${note.title || 'Untitled Note'}</div>
-        `;
-        btn.addEventListener('click', () => {
-          activeNoteId = note.id;
-          renderNotesWorkspace();
-        });
-        sidebar.appendChild(btn);
-      });
-
-      const activeNote = xyState.notes.find(n => n.id === activeNoteId) || xyState.notes[0];
-      if (activeNote) {
-        document.getElementById('activeNoteTitleInput').value = activeNote.title;
-        document.getElementById('activeNoteBodyInput').value = activeNote.body;
-        document.getElementById('noteCategorySelect').value = activeNote.category;
-        updateNoteWordCount(activeNote.body);
-      }
-    }
-
-    function updateNoteWordCount(text) {
-      const clean = (text || '').trim();
-      const words = clean ? clean.split(/\s+/).length : 0;
-      document.getElementById('noteWordCountLabel').textContent = `${words} words • ${(text || '').length} chars`;
-    }
-
-    function renderFocusHeatmap() {
-      const grid = document.getElementById('heatmapGridEl');
-      if (!grid) return;
-      grid.innerHTML = '';
-
-      const today = new Date();
-      let totalMins = 0;
-      let activeDays = 0;
-
-      for (let i = 363; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        const iso = d.toISOString().slice(0, 10);
-        const mins = xyState.focusHistory[iso] || 0;
-
-        if (mins > 0) { totalMins += mins; activeDays += 1; }
-
-        let colorClass = 'bg-zinc-200/80 dark:bg-zinc-800/80';
-        if (mins >= 60) colorClass = 'bg-emerald-400';
-        else if (mins >= 25) colorClass = 'bg-emerald-600/85';
-        else if (mins > 0) colorClass = 'bg-emerald-900/70';
-
-        const cell = document.createElement('div');
-        cell.className = `w-3 h-3 rounded-[3px] ${colorClass} transition-transform hover:scale-125`;
-        cell.title = `${iso}: ${mins} mins focused`;
-        grid.appendChild(cell);
-      }
-
-      const todayIso = today.toISOString().slice(0, 10);
-      document.getElementById('heatStatTotalMins').textContent = `${totalMins}m`;
-      document.getElementById('heatStatActiveDays').textContent = String(activeDays);
-      document.getElementById('heatStatTodayMins').textContent = `${xyState.focusHistory[todayIso] || 0}m`;
-      document.getElementById('heatStatPeakStreak').textContent = `${xyState.tasks.reduce((max, t) => Math.max(max, t.streak || 0), 0)}d`;
-    }
-
-    function initPartBPlannerAndHeatmap() {
-      renderInteractiveCalendar();
-      renderSelectedDateEvents();
-      renderNotesWorkspace();
-      renderFocusHeatmap();
-
-      document.getElementById('calPrevMonthBtn').addEventListener('click', () => { calViewDate.setMonth(calViewDate.getMonth() - 1); renderInteractiveCalendar(); });
-      document.getElementById('calNextMonthBtn').addEventListener('click', () => { calViewDate.setMonth(calViewDate.getMonth() + 1); renderInteractiveCalendar(); });
-      document.getElementById('calTodayBtn').addEventListener('click', () => {
-        calViewDate = new Date(); selectedCalIso = new Date().toISOString().slice(0, 10);
-        renderInteractiveCalendar(); renderSelectedDateEvents();
-      });
-
-      document.getElementById('calEventForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const inp = document.getElementById('calEventInput');
-        if (!inp.value.trim()) return;
-        if (!xyState.calendarEvents[selectedCalIso]) xyState.calendarEvents[selectedCalIso] = [];
-        xyState.calendarEvents[selectedCalIso].push(inp.value.trim());
-        inp.value = '';
-        saveXyState();
-        renderInteractiveCalendar();
-        renderSelectedDateEvents();
-      });
-
-      document.getElementById('createNewNoteBtn').addEventListener('click', () => {
-        const newNote = { id: 'n-' + Date.now(), title: 'New Xyrox Note', category: document.getElementById('noteCategorySelect').value, body: '', updated: new Date().toLocaleDateString() };
-        xyState.notes.unshift(newNote);
-        activeNoteId = newNote.id;
-        saveXyState();
-        renderNotesWorkspace();
-      });
-
-      const saveCurrentNoteEdits = () => {
-        const note = xyState.notes.find(n => n.id === activeNoteId);
-        if (!note) return;
-        note.title = document.getElementById('activeNoteTitleInput').value;
-        note.body = document.getElementById('activeNoteBodyInput').value;
-        note.category = document.getElementById('noteCategorySelect').value;
-        note.updated = new Date().toLocaleDateString();
-        updateNoteWordCount(note.body);
-        saveXyState();
-      };
-
-      document.getElementById('activeNoteTitleInput').addEventListener('input', () => { saveCurrentNoteEdits(); renderNotesWorkspace(); });
-      document.getElementById('activeNoteBodyInput').addEventListener('input', saveCurrentNoteEdits);
-      document.getElementById('noteCategorySelect').addEventListener('change', () => { saveCurrentNoteEdits(); renderNotesWorkspace(); });
-
-      document.getElementById('deleteActiveNoteBtn').addEventListener('click', () => {
-        if (xyState.notes.length <= 1) { xyState.notes[0].title = 'Untitled Note'; xyState.notes[0].body = ''; }
-        else { xyState.notes = xyState.notes.filter(n => n.id !== activeNoteId); activeNoteId = xyState.notes[0].id; }
-        saveXyState();
-        renderNotesWorkspace();
-      });
-
-      document.getElementById('logDemoFocusBtn').addEventListener('click', () => { recordFocusMinute(25); renderFocusHeatmap(); });
-    }
-
-    /********************************************************************
-     * 9. PART C MODULE: UTILITY BOX, GLOBAL CHAT, XYROX AI & CLOUD SYNC
-     ********************************************************************/
-    function generateSecurePassword() {
-      const len = Number(document.getElementById('pwdLenSlider').value) || 18;
-      document.getElementById('pwdLenLabel').textContent = String(len);
-
-      let chars = '';
-      if (document.getElementById('pwdOptUpper').checked) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      if (document.getElementById('pwdOptLower').checked) chars += 'abcdefghijklmnopqrstuvwxyz';
-      if (document.getElementById('pwdOptNum').checked) chars += '0123456789';
-      if (document.getElementById('pwdOptSym').checked) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
-      if (!chars) chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-
-      let out = '';
-      const arr = new Uint32Array(len);
-      window.crypto.getRandomValues(arr);
-      for (let i = 0; i < len; i++) out += chars[arr[i] % chars.length];
-      document.getElementById('pwdOutputInput').value = out;
-
-      const badge = document.getElementById('pwdStrengthBadge');
-      if (len >= 16) { badge.textContent = 'MILITARY GRADE'; badge.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400'; }
-      else if (len >= 12) { badge.textContent = 'STRONG'; badge.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/15 text-amber-400'; }
-      else { badge.textContent = 'BASIC'; badge.className = 'text-[11px] font-mono px-2.5 py-0.5 rounded bg-rose-500/15 text-rose-400'; }
-    }
-
-    function renderWorldClocks() {
-      const container = document.getElementById('worldClockGridEl');
-      if (!container) return;
-      const zones = [
-        { name: 'UTC / Server', tz: 'UTC' }, { name: 'New York', tz: 'America/New_York' },
-        { name: 'London', tz: 'Europe/London' }, { name: 'New Delhi', tz: 'Asia/Kolkata' },
-        { name: 'Tokyo', tz: 'Asia/Tokyo' }, { name: 'Sydney', tz: 'Australia/Sydney' }
-      ];
-      const now = new Date();
-      container.innerHTML = '';
-      zones.forEach(z => {
-        const timeStr = now.toLocaleTimeString('en-US', { timeZone: z.tz, hour: '2-digit', minute: '2-digit', hour12: !xyState.use24Hour });
-        const card = document.createElement('div');
-        card.className = 'p-3 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5';
-        card.innerHTML = `<span class="text-[10px] font-mono text-zinc-400 block truncate">${z.name}</span><strong class="font-mono text-sm sm:text-base tabular-nums">${timeStr}</strong>`;
-        container.appendChild(card);
-      });
-    }
-
-    function updateUnitConverter() {
-      const val = parseFloat(document.getElementById('unitValueInput').value) || 0;
-      const mode = document.getElementById('unitCategorySelect').value;
-      let res = '';
-      if (mode === 'km_mi') res = (val * 0.621371).toFixed(3) + ' mi';
-      else if (mode === 'mi_km') res = (val / 0.621371).toFixed(3) + ' km';
-      else if (mode === 'kg_lb') res = (val * 2.20462).toFixed(2) + ' lbs';
-      else if (mode === 'lb_kg') res = (val / 2.20462).toFixed(2) + ' kg';
-      else if (mode === 'c_f') res = ((val * 9) / 5 + 32).toFixed(1) + ' °F';
-      else if (mode === 'f_c') res = (((val - 32) * 5) / 9).toFixed(1) + ' °C';
-      else if (mode === 'gb_mb') res = (val * 1024).toFixed(0) + ' MB';
-      document.getElementById('unitResultBox').textContent = res;
-    }
-
-    function renderGlobalChat() {
-      if (!Array.isArray(xyState.chatMessages) || xyState.chatMessages.length === 0) {
-        xyState.chatMessages = [{ id: 'm-welcome', author: 'xyrox6789', isFounder: true, text: 'Welcome to XYROX-UTILITIES v2.0! Drop your current focus goals below or hop into the official Discord server.', time: 'SYSTEM' }];
-      }
-
-      const isFounder = xyState.user && xyState.user.isFounder;
-      document.getElementById('founderModerationBar').classList.toggle('hidden', !isFounder);
-      document.getElementById('founderDiscordConfigBox').classList.toggle('hidden', !isFounder);
-      document.getElementById('pinnedChatBannerText').textContent = xyState.pinnedChat || 'Welcome to XYROX-UTILITIES Global Chat — Engineered by xyrox6789.';
-      document.getElementById('chatIdentityBadge').textContent = `Posting as: ${xyState.user.username || 'Operator'}${isFounder ? ' [FOUNDER]' : ''}`;
-
-      if (xyState.discordInviteUrl) document.getElementById('discordInviteLinkBtn').href = xyState.discordInviteUrl;
-
-      const feed = document.getElementById('chatMessagesFeed');
-      feed.innerHTML = '';
-
-      xyState.chatMessages.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = 'p-3 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/70 border border-zinc-200/60 dark:border-white/5 flex items-start justify-between gap-2';
-        div.innerHTML = `
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <span class="font-mono text-xs font-bold ${msg.isFounder ? 'text-amber-400' : 'text-zinc-900 dark:text-white'}">${msg.author}</span>
-              ${msg.isFounder ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">[FOUNDER]</span>` : ''}
-              <span class="text-[10px] font-mono text-zinc-400">${msg.time}</span>
-            </div>
-            <p class="text-xs sm:text-sm text-zinc-700 dark:text-zinc-200 break-words">${msg.text}</p>
-          </div>
-          ${isFounder ? `<button type="button" class="del-chat-btn text-xs font-mono text-zinc-400 hover:text-rose-500 px-1.5" title="Founder Delete">✕</button>` : ''}
-        `;
-        const delBtn = div.querySelector('.del-chat-btn');
-        if (delBtn) delBtn.addEventListener('click', () => { xyState.chatMessages = xyState.chatMessages.filter(m => m.id !== msg.id); saveXyState(); renderGlobalChat(); });
-        feed.appendChild(div);
-      });
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function appendAiTerminalLine(role, text) {
-      const stream = document.getElementById('aiTerminalStream');
-      const row = document.createElement('div');
-      row.className = role === 'user' ? 'text-emerald-400' : 'text-zinc-300 pl-3 border-l-2 border-zinc-700';
-      row.textContent = role === 'user' ? `> ${text}` : text;
-      stream.appendChild(row);
-      stream.scrollTop = stream.scrollHeight;
-    }
-
-    async function handleAiPrompt(promptText) {
-      appendAiTerminalLine('user', promptText);
-      const cmd = promptText.trim().toLowerCase();
-
-      if (xyState.customAiEndpoint) {
-        try {
-          const res = await fetch(xyState.customAiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: promptText, user: xyState.user.username }) });
-          const data = await res.json();
-          appendAiTerminalLine('ai', data.reply || JSON.stringify(data));
-          return;
-        } catch (err) {
-          appendAiTerminalLine('ai', `[XYROX-NEURAL-v1] Custom endpoint unreachable (${err.message}). Falling back to local skeleton.`);
-        }
-      }
-
-      if (cmd === '/status') appendAiTerminalLine('ai', `[XYROX-NEURAL-v1] STATUS: ONLINE | Sessions Today: ${xyState.sessionsToday} | Tasks Active: ${xyState.tasks.filter(t => !t.done).length}`);
-      else if (cmd === '/architecture') appendAiTerminalLine('ai', `[XYROX-NEURAL-v1] Proprietary neural engine under active development by xyrox6789. Zero third-party LLM wrappers.`);
-      else if (cmd === '/analyze-focus') appendAiTerminalLine('ai', `[TELEMETRY] You have completed ${xyState.tasks.filter(t => t.done).length} tasks and ${xyState.sessionsToday} focus blocks today. Recommended: 25m Pomodoro + Brown Noise.`);
-      else if (cmd === '/help') appendAiTerminalLine('ai', `Available Commands: /status, /architecture, /analyze-focus, /help — or connect your custom inference URL on the right.`);
-      else appendAiTerminalLine('ai', `[XYROX-NEURAL-v1 SKELETON] Query logged ("${promptText}"). Ready for custom xyrox6789 neural weights connection.`);
-    }
-
-    window.syncToCloudIfEnabled = async function () {
-      const url = xyState.user && xyState.user.cloudUrl;
-      if (!url || !xyState.user.loggedIn) return;
-      try {
-        const cleanUrl = url.replace(/\/$/, '');
-        const userKey = encodeURIComponent(xyState.user.username.toLowerCase());
-        await fetch(`${cleanUrl}/xyrox_users/${userKey}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            intention: xyState.intention, tasks: xyState.tasks, goals: xyState.goals,
-            countdowns: xyState.countdowns, notes: xyState.notes, calendarEvents: xyState.calendarEvents,
-            focusHistory: xyState.focusHistory, updatedAt: Date.now()
-          })
-        });
-      } catch (e) {}
+      calcDisp.textContent = calcVal;
+      calcHDisp.textContent = calcHist;
     };
 
-    function initPartCUtilitiesChatAI() {
-      generateSecurePassword();
-      document.getElementById('pwdLenSlider').addEventListener('input', generateSecurePassword);
-      ['pwdOptUpper', 'pwdOptLower', 'pwdOptNum', 'pwdOptSym'].forEach(id => document.getElementById(id).addEventListener('change', generateSecurePassword));
-      document.getElementById('regenPwdBtn').addEventListener('click', generateSecurePassword);
-      document.getElementById('copyPwdBtn').addEventListener('click', e => {
-        navigator.clipboard.writeText(document.getElementById('pwdOutputInput').value);
-        e.target.textContent = 'Copied ✓'; setTimeout(() => { e.target.textContent = 'Copy'; }, 1200);
-      });
+    // --- 8. Auth & Identity Sync (Google Mock/Real) ---
+    let currentUser = null;
+    
+    window.mockGoogleLogin = () => {
+      // Simulates Google login when Firebase isn't set up
+      setTimeout(() => {
+        window.handleAuthSuccess({ displayName: 'Demo Founder', email: 'xyrox@example.com', photoURL: '' });
+      }, 800);
+    };
 
-      renderWorldClocks(); setInterval(renderWorldClocks, 15000);
+    window.handleAuthSuccess = (user) => {
+      currentUser = user;
+      document.getElementById('loggedOutView').classList.add('hidden');
+      document.getElementById('loggedInView').classList.remove('hidden');
+      
+      const name = user.displayName || 'Operator';
+      document.getElementById('profileName').textContent = name;
+      document.getElementById('profileEmail').textContent = user.email || '';
+      document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
+      document.getElementById('sidebarUserName').textContent = name;
+      
+      // Unlock Chat
+      const cInput = document.getElementById('chatInput');
+      cInput.disabled = false;
+      cInput.placeholder = `Message as ${name}...`;
+      document.querySelector('#chatForm button').disabled = false;
+    };
 
-      const taInput = document.getElementById('textAnalyzerInput');
-      const updateTa = () => {
-        const val = taInput.value;
-        const words = val.trim() ? val.trim().split(/\s+/).length : 0;
-        const chars = val.length; const lines = val ? val.split(/\n/).length : 0;
-        const secs = Math.ceil((words / 200) * 60);
-        document.getElementById('taWords').textContent = String(words); document.getElementById('taChars').textContent = String(chars);
-        document.getElementById('taLines').textContent = String(lines); document.getElementById('taRead').textContent = secs >= 60 ? `${Math.ceil(secs / 60)}m` : `${secs}s`;
-      };
-      taInput.addEventListener('input', updateTa);
-      document.getElementById('clearAnalyzerBtn').addEventListener('click', () => { taInput.value = ''; updateTa(); });
+    window.handleAuthLogout = () => {
+      currentUser = null;
+      document.getElementById('loggedOutView').classList.remove('hidden');
+      document.getElementById('loggedInView').classList.add('hidden');
+      document.getElementById('sidebarUserName').textContent = 'Guest Account';
+      
+      // Lock Chat
+      const cInput = document.getElementById('chatInput');
+      cInput.disabled = true;
+      cInput.placeholder = `Sign in via Settings to send messages...`;
+      document.querySelector('#chatForm button').disabled = true;
+    };
 
-      updateUnitConverter();
-      document.getElementById('unitValueInput').addEventListener('input', updateUnitConverter);
-      document.getElementById('unitCategorySelect').addEventListener('change', updateUnitConverter);
+    // Global Chat Mock
+    document.getElementById('chatForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const val = input.value.trim();
+      if(!val || !currentUser) return;
+      
+      const feed = document.getElementById('chatFeed');
+      const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      const msg = document.createElement('div');
+      msg.className = "bg-black/30 p-3 rounded-lg border border-white/5";
+      msg.innerHTML = `<div class="flex items-baseline gap-2 mb-1"><span class="font-semibold text-sm text-indigo-400">${currentUser.displayName}</span><span class="text-[10px] text-zinc-500 font-mono">${time}</span></div><p class="text-sm text-zinc-200">${val}</p>`;
+      
+      feed.appendChild(msg);
+      input.value = '';
+      feed.scrollTop = feed.scrollHeight;
+    });
 
-      document.getElementById('mathExprInput').addEventListener('input', e => {
-        const raw = e.target.value.replace(/[^0-9+\-*/().\s]/g, '');
-        if (!raw.trim()) { document.getElementById('mathExprOutput').textContent = '= 0'; return; }
-        try {
-          const val = Function(`"use strict"; return (${raw})`)();
-          if (typeof val === 'number' && isFinite(val)) document.getElementById('mathExprOutput').textContent = `= ${Number(val.toFixed(4))}`;
-        } catch (err) {}
-      });
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      init3DBackground();
+    });
 
-      renderGlobalChat();
-      document.getElementById('chatSendForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const inp = document.getElementById('chatMessageInput');
-        if (!inp.value.trim()) return;
-        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        xyState.chatMessages.push({ id: 'm-' + Date.now(), author: xyState.user.username || 'Operator', isFounder: Boolean(xyState.user.isFounder), text: inp.value.trim(), time: nowStr });
-        inp.value = ''; saveXyState(); renderGlobalChat();
-      });
-
-      document.getElementById('founderPinForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const inp = document.getElementById('founderPinInput');
-        if (!inp.value.trim()) return;
-        xyState.pinnedChat = inp.value.trim(); inp.value = ''; saveXyState(); renderGlobalChat();
-      });
-
-      document.getElementById('clearAllChatFounderBtn').addEventListener('click', () => { xyState.chatMessages = []; saveXyState(); renderGlobalChat(); });
-      document.getElementById('saveDiscordUrlBtn').addEventListener('click', () => {
-        const url = document.getElementById('founderDiscordUrlInput').value.trim();
-        if (url) { xyState.discordInviteUrl = url; saveXyState(); renderGlobalChat(); }
-      });
-
-      document.getElementById('authForm').addEventListener('submit', () => setTimeout(renderGlobalChat, 50));
-      document.getElementById('logoutBtn').addEventListener('click', () => setTimeout(renderGlobalChat, 50));
-
-      appendAiTerminalLine('ai', '[XYROX-NEURAL-v1] Boot sequence complete. Proprietary AI skeleton engineered by xyrox6789.');
-      appendAiTerminalLine('ai', 'Type /help or click a command chip below to inspect telemetry.');
-
-      document.getElementById('aiPromptForm').addEventListener('submit', e => {
-        e.preventDefault(); const inp = document.getElementById('aiPromptInput');
-        if (!inp.value.trim()) return; handleAiPrompt(inp.value.trim()); inp.value = '';
-      });
-
-      document.querySelectorAll('.ai-chip-btn').forEach(btn => { btn.addEventListener('click', () => handleAiPrompt(btn.getAttribute('data-aiprompt'))); });
-      document.getElementById('clearAiConsoleBtn').addEventListener('click', () => { document.getElementById('aiTerminalStream').innerHTML = ''; appendAiTerminalLine('ai', '[XYROX-NEURAL-v1] Terminal cleared.'); });
-
-      if (xyState.customAiEndpoint) {
-        document.getElementById('customAiEndpointInput').value = xyState.customAiEndpoint;
-        document.getElementById('aiTelemetryMode').textContent = 'CUSTOM API CONNECTED';
-      }
-
-      document.getElementById('saveAiEndpointBtn').addEventListener('click', () => {
-        const url = document.getElementById('customAiEndpointInput').value.trim();
-        xyState.customAiEndpoint = url;
-        document.getElementById('aiTelemetryMode').textContent = url ? 'CUSTOM API CONNECTED' : 'LOCAL SKELETON';
-        saveXyState();
-        appendAiTerminalLine('ai', url ? `[CONFIG] Connected to custom endpoint: ${url}` : '[CONFIG] Reverted to local skeleton mode.');
-      });
-    }
   </script>
 </body>
 </html>
