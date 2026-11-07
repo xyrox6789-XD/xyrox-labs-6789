@@ -1,1 +1,30 @@
-
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>XYROX-UTILITIES — Part A</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } } };
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    .xy-card { background: rgba(17, 17, 19, 0.78); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: rgba(113, 113, 122, 0.35); border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen bg-zinc-950 text-zinc-100 relative">
+  <!-- 3D Particle Canvas -->
+  <canvas id="xyrox3dCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-90"></canvas>
+  <div class="relative z-10 max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold">XYROX-UTILITIES — Part A Loaded Successfully</h1>
+    <p class="text-xs text-zinc-400 mt-2">Follow the merge instructions below to combine Part A, B, and C into your main index.html!</p>
+  </div>
+</body>
+</html>
