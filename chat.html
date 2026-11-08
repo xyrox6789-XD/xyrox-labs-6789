@@ -27,22 +27,33 @@
         extend: {
           fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
           colors: { 
-            xyrox: { bg: '#0a0a0b', panel: 'rgba(17, 17, 19, 0.65)', border: 'rgba(255, 255, 255, 0.08)' } 
+            xyrox: { bg: '#060608', panel: 'rgba(17, 17, 19, 0.72)', border: 'rgba(255, 255, 255, 0.09)' } 
           }
         }
       }
     };
   </script>
 </head>
-<body class="h-screen w-screen flex antialiased selection:bg-white/20">
+<body class="h-screen w-screen bg-[#060608] text-gray-200 flex flex-col md:flex-row antialiased selection:bg-white/20 overflow-hidden">
 
   <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
-  <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none opacity-30"></div>
+  <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none"></div>
+
+  <!-- ================= 1.5 MOBILE HEADER ================= -->
+  <div class="md:hidden flex items-center justify-between p-4 bg-xyrox-panel border-b border-xyrox-border z-30 relative">
+    <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
+    <button id="mobileMenuBtn" class="text-white p-1 bg-white/5 rounded border border-white/10">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity"></div>
 
   <!-- ================= 2. LEFT SIDEBAR NAVIGATION ================= -->
-  <aside class="w-64 h-full z-20 flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl h-full">
     <div>
-      <div class="h-20 flex items-center px-6 border-b border-xyrox-border">
+      <div class="h-20 items-center px-6 border-b border-xyrox-border hidden md:flex">
         <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
       </div>
       
@@ -79,32 +90,32 @@
         </div>
         <div class="flex flex-col items-start leading-tight">
           <span class="text-gray-200 font-medium text-xs" id="sidebarAuthName">Guest Mode</span>
-          <span class="text-[10px] text-gray-500 mt-0.5">Sign In via Google</span>
+          <span class="text-[10px] text-gray-500 mt-0.5" id="sidebarAuthStatus">Sign In via Google</span>
         </div>
       </a>
     </div>
   </aside>
 
   <!-- ================= 3. CHAT CONTENT ================= -->
-  <main class="flex-1 h-full flex flex-col relative z-10 p-8 md:p-12 animate-fade-in">
+  <main class="flex-1 h-full flex flex-col relative z-10 p-6 md:p-12 overflow-y-auto animate-fade-in">
     <div class="max-w-5xl mx-auto w-full flex-1 flex flex-col h-full space-y-6">
       
-      <!-- Top Banner: Discord Invite -->
-      <a href="https://discord.gg/crxjFeNtWG" target="_blank" class="w-full bg-[#5865F2]/10 border border-[#5865F2]/30 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/50 transition-all rounded-2xl p-6 flex items-center justify-between group shadow-[0_0_20px_rgba(88,101,242,0.1)]">
-        <div class="flex items-center gap-5">
-          <div class="w-12 h-12 bg-[#5865F2] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+      <!-- Top Banner: Permanent Discord Invite -->
+      <a href="https://discord.gg/crxjFeNtWG" target="_blank" rel="noopener noreferrer" class="w-full bg-[#5865F2]/15 border border-[#5865F2]/40 hover:bg-[#5865F2]/25 hover:border-[#5865F2]/60 transition-all rounded-2xl p-5 md:p-6 flex items-center justify-between group shadow-[0_10px_30px_rgba(88,101,242,0.15)]">
+        <div class="flex items-center gap-4 md:gap-5">
+          <div class="w-12 h-12 bg-[#5865F2] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform shrink-0">
             <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028 14.09 14.09 0 001.226-1.994.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
           </div>
           <div>
-            <h2 class="text-xl font-semibold text-white tracking-tight">Join the Official XYROX Server</h2>
-            <p class="text-sm text-[#5865F2] font-medium mt-0.5">discord.gg/crxjFeNtWG</p>
+            <h2 class="text-lg md:text-xl font-semibold text-white tracking-tight">Join the Official XYROX Server</h2>
+            <p class="text-xs md:text-sm text-[#8ea1e1] font-mono mt-0.5">discord.gg/crxjFeNtWG</p>
           </div>
         </div>
-        <div class="px-5 py-2.5 bg-white text-black font-semibold rounded-lg shadow-md group-hover:bg-gray-200 transition">Connect</div>
+        <div class="px-4 py-2 bg-white text-black text-xs md:text-sm font-semibold rounded-lg shadow-md group-hover:bg-gray-200 transition shrink-0">Join Discord</div>
       </a>
 
       <!-- Main Web Chat Interface -->
-      <div class="flex-1 bg-xyrox-panel backdrop-blur-xl border border-xyrox-border rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex-1 bg-xyrox-panel backdrop-blur-xl border border-xyrox-border rounded-3xl shadow-2xl flex flex-col overflow-hidden min-h-[380px]">
         
         <!-- Chat Header -->
         <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
@@ -112,92 +123,72 @@
             <h3 class="text-white font-medium flex items-center gap-2">
               <span class="text-gray-500 font-mono text-lg">#</span> xyrox-global
             </h3>
-            <p class="text-xs text-gray-500">Live community platform. Requires Google Sign-In.</p>
+            <p class="text-xs text-gray-500">Live community channel. Google Sign-In required to post.</p>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 font-mono">System Online</span>
-          </div>
+          <span class="text-xs text-gray-400 font-mono uppercase tracking-wider">Connected</span>
         </div>
 
         <!-- Chat History -->
         <div id="chatBox" class="flex-1 overflow-y-auto p-6 space-y-5">
-          <!-- Pinned System Message -->
-          <div class="flex gap-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
-              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <div class="flex gap-4 p-4 bg-white/5 border border-white/10 rounded-xl">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/15">
+              <span class="text-xs font-mono font-semibold text-white">SYS</span>
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-semibold text-blue-400">System</span>
-                <span class="text-xs text-gray-500 font-mono">Pinned</span>
+                <span class="font-semibold text-white text-sm">XYROX System</span>
+                <span class="text-[10px] text-gray-400 font-mono uppercase border border-white/10 px-1.5 py-0.5 rounded">Pinned</span>
               </div>
-              <p class="text-sm text-gray-300 mt-1">Welcome to XYROX-UTILITIES. Please sign in via Google in Settings to send messages. Bad behavior will result in a ban.</p>
+              <p class="text-sm text-gray-300 mt-1">Welcome to #xyrox-global. Connect your Google Account in Settings to chat, or join our official Discord server above.</p>
             </div>
           </div>
 
-          <!-- Dummy Message to show Founder Badge styling -->
           <div class="flex gap-4">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-black flex items-center justify-center shrink-0 border border-white/10">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-black flex items-center justify-center shrink-0 border border-white/15">
               <span class="text-xs font-bold text-white">XY</span>
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-semibold text-white">xyrox6789</span>
+                <span class="font-semibold text-white text-sm">xyrox6789</span>
                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-white text-black uppercase">Founder</span>
-                <span class="text-xs text-gray-500 font-mono">Today at 10:00 AM</span>
               </div>
-              <p class="text-sm text-gray-300 mt-1">The chat architecture is ready. Firebase integration coming next.</p>
+              <p class="text-sm text-gray-300 mt-1">3D engine and dark OS theme locked in.</p>
             </div>
           </div>
         </div>
 
-        <!-- Input Area (Locked until Auth) -->
-        <div class="p-4 bg-black/20 border-t border-white/5">
+        <!-- Input Area -->
+        <div class="p-4 bg-black/40 border-t border-white/5">
           <div id="chatInputContainer" class="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 opacity-50 cursor-not-allowed">
-            <input type="text" disabled placeholder="You must sign in via Google to chat..." class="w-full bg-transparent text-sm text-white focus:outline-none placeholder:text-gray-500" />
-            <button disabled class="text-gray-500 ml-2"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
+            <input type="text" disabled placeholder="Sign in with Google in Settings to send messages..." class="w-full bg-transparent text-sm text-white focus:outline-none placeholder:text-gray-500" />
+            <button disabled class="text-gray-400 ml-2"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
           </div>
-          <p class="text-center text-xs text-gray-500 mt-3">
-            Go to <a href="settings.html" class="text-white underline underline-offset-2 hover:text-gray-300">Settings</a> to connect your Google Account.
-          </p>
         </div>
 
       </div>
     </div>
   </main>
 
-  <!-- ================= 4. JAVASCRIPT LOGIC ================= -->
+  <!-- ================= 4. MASTER SCRIPTS ================= -->
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
   <script>
-    // --- 3D BACKGROUND ENGINE ---
-    function init3DBackground() {
-      const container = document.getElementById('webgl-container');
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 15; camera.position.x = 8;
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
+    const btn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
 
-      const geometry = new THREE.SphereGeometry(6, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0x444455, wireframe: true, transparent: true, opacity: 0.15 });
-      const globe = new THREE.Mesh(geometry, material);
-      scene.add(globe);
-
-      const animate = function () {
-        requestAnimationFrame(animate);
-        globe.rotation.y += 0.001; globe.rotation.x += 0.0005;
-        renderer.render(scene, camera);
-      };
-      animate();
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
       });
     }
-    init3DBackground();
+    if (overlay) {
+      overlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      });
+    }
   </script>
 </body>
 </html>
