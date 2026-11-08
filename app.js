@@ -32,10 +32,10 @@ function initGlobal3DBackground() {
     // Elite Vercel/GitHub Style Wireframe Sphere
     const geometry = new THREE.SphereGeometry(6, 32, 32);
     const material = new THREE.MeshBasicMaterial({
-        color: 0x444455,
+        color: 0x8888aa, // Brighter metallic color
         wireframe: true,
         transparent: true,
-        opacity: 0.15
+        opacity: 0.35 // Increased opacity so it pops
     });
     const globe = new THREE.Mesh(geometry, material);
     scene.add(globe);
@@ -48,7 +48,7 @@ function initGlobal3DBackground() {
         posArray[i] = (Math.random() - 0.5) * 30;
     }
     particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const particleMat = new THREE.PointsMaterial({ size: 0.02, color: 0xffffff, transparent: true, opacity: 0.3 });
+    const particleMat = new THREE.PointsMaterial({ size: 0.04, color: 0xffffff, transparent: true, opacity: 0.6 }); // Larger and brighter particles
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
 
