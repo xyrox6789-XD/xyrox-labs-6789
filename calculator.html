@@ -34,15 +34,26 @@
     };
   </script>
 </head>
-<body class="h-screen w-screen flex antialiased selection:bg-white/20">
+<body class="h-screen w-screen flex flex-col md:flex-row antialiased selection:bg-white/20">
 
   <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
   <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none opacity-30"></div>
 
+  <!-- ================= 1.5 MOBILE HEADER ================= -->
+  <div class="md:hidden flex items-center justify-between p-4 bg-xyrox-panel border-b border-xyrox-border z-30 relative">
+    <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
+    <button id="mobileMenuBtn" class="text-white p-1 bg-white/5 rounded border border-white/10">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+
   <!-- ================= 2. LEFT SIDEBAR NAVIGATION ================= -->
-  <aside class="w-64 h-full z-20 flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl h-full">
     <div>
-      <div class="h-20 flex items-center px-6 border-b border-xyrox-border">
+      <div class="h-20 flex items-center px-6 border-b border-xyrox-border hidden md:flex">
         <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
       </div>
       
@@ -157,37 +168,23 @@
   </main>
 
   <!-- ================= 4. JAVASCRIPT LOGIC ================= -->
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
   <script>
-    // --- A. 3D BACKGROUND ENGINE (Three.js) ---
-    function init3DBackground() {
-      const container = document.getElementById('webgl-container');
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 15; camera.position.x = 8;
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
+    // --- Mobile Menu Toggle ---
+    const btn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
 
-      const geometry = new THREE.SphereGeometry(6, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0x444455, wireframe: true, transparent: true, opacity: 0.15 });
-      const globe = new THREE.Mesh(geometry, material);
-      scene.add(globe);
+    btn.addEventListener('click', () => {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+    });
 
-      const animate = function () {
-        requestAnimationFrame(animate);
-        globe.rotation.y += 0.001; globe.rotation.x += 0.0005;
-        renderer.render(scene, camera);
-      };
-      animate();
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-    }
-    init3DBackground();
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    });
 
     // --- B. CALCULATOR LOGIC ---
     class Calculator {
@@ -340,15 +337,26 @@
     };
   </script>
 </head>
-<body class="h-screen w-screen flex antialiased selection:bg-white/20">
+<body class="h-screen w-screen flex flex-col md:flex-row antialiased selection:bg-white/20">
 
   <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
   <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none opacity-30"></div>
 
+  <!-- ================= 1.5 MOBILE HEADER ================= -->
+  <div class="md:hidden flex items-center justify-between p-4 bg-xyrox-panel border-b border-xyrox-border z-30 relative">
+    <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
+    <button id="mobileMenuBtn" class="text-white p-1 bg-white/5 rounded border border-white/10">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+
   <!-- ================= 2. LEFT SIDEBAR NAVIGATION ================= -->
-  <aside class="w-64 h-full z-20 flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-xl border-r border-xyrox-border shadow-2xl h-full">
     <div>
-      <div class="h-20 flex items-center px-6 border-b border-xyrox-border">
+      <div class="h-20 flex items-center px-6 border-b border-xyrox-border hidden md:flex">
         <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
       </div>
       
@@ -463,37 +471,23 @@
   </main>
 
   <!-- ================= 4. JAVASCRIPT LOGIC ================= -->
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
   <script>
-    // --- A. 3D BACKGROUND ENGINE (Three.js) ---
-    function init3DBackground() {
-      const container = document.getElementById('webgl-container');
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 15; camera.position.x = 8;
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      container.appendChild(renderer.domElement);
+    // --- Mobile Menu Toggle ---
+    const btn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
 
-      const geometry = new THREE.SphereGeometry(6, 32, 32);
-      const material = new THREE.MeshBasicMaterial({ color: 0x444455, wireframe: true, transparent: true, opacity: 0.15 });
-      const globe = new THREE.Mesh(geometry, material);
-      scene.add(globe);
+    btn.addEventListener('click', () => {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+    });
 
-      const animate = function () {
-        requestAnimationFrame(animate);
-        globe.rotation.y += 0.001; globe.rotation.x += 0.0005;
-        renderer.render(scene, camera);
-      };
-      animate();
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-    }
-    init3DBackground();
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    });
 
     // --- B. CALCULATOR LOGIC ---
     class Calculator {
