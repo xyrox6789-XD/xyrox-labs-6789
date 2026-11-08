@@ -1,38 +1,115 @@
-/* ... existing code ... /
-body {
-background-color: #0a0a0b;
-/ Add subtle premium gradient lighting like Vercel/Linear */
+/* =========================================================
+XYROX-UTILITIES — MASTER 3D & DARK OS STYLESHEET (style.css)
+Controls the background, 3D perspective depth, and glass UI
+across every page on the website.
+========================================================= */
+/* 1. Force Deep 3D Space Background (Prevents white screen on all pages) */
+html, body {
+background-color: #060608 !important;
 background-image:
-radial-gradient(circle at 50% 0%, rgba(29, 29, 36, 0.4) 0%, transparent 50%),
-radial-gradient(circle at 100% 100%, rgba(29, 29, 36, 0.2) 0%, transparent 50%);
-color: #e5e7eb;
+radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.10) 0%, transparent 55%),
+radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 45%) !important;
+color: #e5e7eb !important;
+font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 overflow: hidden;
+perspective: 1400px;
+-webkit-font-smoothing: antialiased;
 }
-/* --- 2. Custom Mac/Vercel Style Scrollbar --- /
-/ ... existing code ... /
-/ ... existing code ... */
+/* 2. Make the 3D WebGL Background Crisp & Always Visible */
+#webgl-container {
+position: fixed;
+inset: 0;
+z-index: 0;
+pointer-events: none;
+opacity: 1 !important;
+}
+/* 3. 3D Glass Panels & Elevation Depth */
+.bg-xyrox-panel,
+.xy-card {
+background: linear-gradient(145deg, rgba(20, 20, 25, 0.72) 0%, rgba(10, 10, 14, 0.86) 100%) !important;
+backdrop-filter: blur(20px) saturate(140%);
+-webkit-backdrop-filter: blur(20px) saturate(140%);
+border: 1px solid rgba(255, 255, 255, 0.09) !important;
+box-shadow:
+0 20px 50px -10px rgba(0, 0, 0, 0.75),
+0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+0 1px 0 0 rgba(255, 255, 255, 0.15) inset;
+transform-style: preserve-3d;
+transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease;
+}
+.bg-xyrox-panel:hover,
+.xy-card:hover {
+border-color: rgba(255, 255, 255, 0.18) !important;
+box-shadow:
+0 28px 65px -12px rgba(0, 0, 0, 0.85),
+0 0 25px rgba(56, 189, 248, 0.06),
+0 1px 0 0 rgba(255, 255, 255, 0.22) inset;
+}
+/* 4. Custom Minimal Scrollbar */
+::-webkit-scrollbar {
+width: 5px;
+height: 5px;
+}
+::-webkit-scrollbar-track {
+background: transparent;
+}
+::-webkit-scrollbar-thumb {
+background: rgba(255, 255, 255, 0.14);
+border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+background: rgba(255, 255, 255, 0.28);
+}
+/* 5. Studio Range Sliders */
+input[type="range"] {
+-webkit-appearance: none;
+appearance: none;
+background: transparent;
+width: 100%;
+height: 4px;
+border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+background: rgba(255, 255, 255, 0.12);
+height: 4px;
+border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+-webkit-appearance: none;
+appearance: none;
+height: 14px;
+width: 14px;
+border-radius: 50%;
+background: #ffffff;
+margin-top: -5px;
+cursor: pointer;
+box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+transition: transform 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+transform: scale(1.2);
+}
+/* 6. Clean Number Inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+-webkit-appearance: none;
+margin: 0;
+}
 input[type="number"] {
 -moz-appearance: textfield;
 }
-/* --- 5. Custom Animations & Hover Physics --- */
-@keyframes fadeIn {
+/* 7. Smooth 3D Entrance Animation */
+@keyframes fadeIn3D {
 from {
 opacity: 0;
-transform: translateY(15px) scale(0.98);
+transform: translateY(18px) translateZ(-30px) rotateX(4deg);
 }
 to {
 opacity: 1;
-transform: translateY(0) scale(1);
+transform: translateY(0) translateZ(0) rotateX(0deg);
 }
 }
 .animate-fade-in {
-animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-/* Add premium glass card hover effects globally */
-.xy-card, .bg-xyrox-panel {
-transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
-}
-.xy-card:hover, .bg-xyrox-panel:hover {
-border-color: rgba(255, 255, 255, 0.15);
-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+animation: fadeIn3D 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
