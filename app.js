@@ -21,43 +21,72 @@ function initGlobal3DBackground() {
     
     // Professional Camera Setup
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 15;
-    camera.position.x = 8;
+    camera.position.z = 18;
+    camera.position.x = 0; // Centered
+    camera.position.y = 2; // Slightly elevated
     
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Elite Vercel/GitHub Style Wireframe Sphere
-    const geometry = new THREE.SphereGeometry(6, 32, 32);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0x8888aa, // Brighter metallic color
-        wireframe: true,
+    // Elite Vercel/GitHub Style Point Globe (No cheap wireframes)
+    const geometry = new THREE.SphereGeometry(7, 64, 64);
+    
+    // Extract only a fraction of vertices for a highly minimal, elegant look
+    const positionAttribute = geometry.getAttribute('position');
+    const vertexCount = positionAttribute.count;
+    const newPositions = [];
+    
+    for (let i = 0; i < vertexCount; i += 3) {
+        newPositions.push(
+            positionAttribute.getX(i),
+            positionAttribute.getY(i),
+            positionAttribute.getZ(i)
+        );
+    }
+    
+    const minimalGeo = new THREE.BufferGeometry();
+    minimalGeo.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
+
+    const material = new THREE.PointsMaterial({
+        color: 0xffffff, // Pure white points
+        size: 0.03, // Very fine dots
         transparent: true,
-        opacity: 0.35 // Increased opacity so it pops
+        opacity: 0.25, // Subtle and professional
+        blending: THREE.AdditiveBlending
     });
-    const globe = new THREE.Mesh(geometry, material);
+    const globe = new THREE.Points(minimalGeo, material);
+    
+    // Tilt the globe slightly for a premium aesthetic
+    globe.rotation.z = 0.2;
+    globe.rotation.x = 0.2;
     scene.add(globe);
 
-    // Subtle Floating Particles
-    const particleGeo = new THREE.BufferGeometry();
-    const particleCount = 400;
-    const posArray = new Float32Array(particleCount * 3);
-    for(let i=0; i < particleCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 30;
+    // Subtle Floating Ambient Dust
+    const dustGeo = new THREE.BufferGeometry();
+    const dustCount = 300;
+    const dustPos = new Float32Array(dustCount * 3);
+    for(let i=0; i < dustCount * 3; i++) {
+        dustPos[i] = (Math.random() - 0.5) * 40;
     }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const particleMat = new THREE.PointsMaterial({ size: 0.04, color: 0xffffff, transparent: true, opacity: 0.6 }); // Larger and brighter particles
-    const particles = new THREE.Points(particleGeo, particleMat);
-    scene.add(particles);
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dustMat = new THREE.PointsMaterial({ 
+        size: 0.02, 
+        color: 0x8892b0, 
+        transparent: true, 
+        opacity: 0.3 
+    });
+    const dust = new THREE.Points(dustGeo, dustMat);
+    scene.add(dust);
 
     // Smooth Animation Loop
     const animate = function () {
         requestAnimationFrame(animate);
-        globe.rotation.y += 0.001;
-        globe.rotation.x += 0.0005;
-        particles.rotation.y -= 0.0005;
+        // Ultra-slow, elegant rotation
+        globe.rotation.y += 0.0005;
+        dust.rotation.y -= 0.0002;
+        dust.rotation.x += 0.0001;
         renderer.render(scene, camera);
     };
     animate();
