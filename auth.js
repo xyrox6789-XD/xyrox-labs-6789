@@ -1,73 +1,266 @@
-/* 
-  ================================================
-  XYROX-UTILITIES MASTER AUTH (auth.js)
-  ================================================
-  Handles Google Sign-In logic and remembers the 
-  user's session across different HTML tabs.
-*/
+/* =========================================================
+   XYROX-UTILITIES — REAL GOOGLE SIGN-IN ENGINE (auth.js)
+   Uses official Google Firebase Authentication (OAuth 2.0)
+   ========================================================= */
 
-// Check login status whenever any page loads
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuthStatus();
-});
+// 1. PASTE YOUR FIREBASE CONFIG HERE (Or paste it inside the Settings page UI)
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  appId: ""
+};
 
-function checkAuthStatus() {
-    // Check browser memory to see if we are logged in
-    const isLoggedIn = localStorage.getItem('xyrox_auth') === 'true';
-    
-    // Update the Sidebar UI everywhere
-    const sidebarName = document.getElementById('sidebarAuthName');
-    const sidebarStatus = document.getElementById('sidebarAuthStatus');
-    
-    if (isLoggedIn) {
-        if (sidebarName) sidebarName.innerHTML = 'xyrox6789 <span class="px-1 py-0.5 rounded text-[8px] font-bold bg-white text-black uppercase ml-1">Founder</span>';
-        if (sidebarStatus) sidebarStatus.textContent = 'Google Synced';
-        
-        // If we are on the Settings page, show the logged-in profile
-        const loggedOutView = document.getElementById('loggedOutView');
-        const loggedInView = document.getElementById('loggedInView');
-        if (loggedOutView && loggedInView) {
-            loggedOutView.classList.add('hidden');
-            loggedInView.classList.remove('hidden');
-        }
+// 2. PUT YOUR PERSONAL GMAIL HERE SO ONLY YOU GET THE [FOUNDER] BADGE
+const FOUNDER_EMAILS = [
+  "xyrox6789@gmail.com" // <-- Replace with your real Gmail address
+];
 
-        // If we are on the Chat page, unlock the chat input
-        const chatInput = document.getElementById('chatInputContainer');
-        if(chatInput) {
-            chatInput.classList.remove('opacity-50', 'cursor-not-allowed');
-            const inputField = chatInput.querySelector('input');
-            const btnField = chatInput.querySelector('button');
-            if(inputField) {
-                inputField.disabled = false;
-                inputField.placeholder = "Message #xyrox-global...";
-            }
-            if(btnField) btnField.disabled = false;
-        }
+let firebaseAuthInstance = null;
+let currentGoogleUser = null;
 
-    } else {
-        if (sidebarName) sidebarName.textContent = 'Guest Mode';
-        if (sidebarStatus) sidebarStatus.textContent = 'Sign In via Google';
-        
-        // If we are on the Settings page, show the login button
-        const loggedOutView = document.getElementById('loggedOutView');
-        const loggedInView = document.getElementById('loggedInView');
-        if (loggedOutView && loggedInView) {
-            loggedOutView.classList.remove('hidden');
-            loggedInView.classList.add('hidden');
-        }
+// Dynamically load Firebase SDKs on any page if not already loaded
+function ensureFirebaseSDKLoaded(callback) {
+  if (typeof firebase !== "undefined" && firebase.auth) {
+    callback();
+    return;
+  }
+
+  const appScript = document.createElement("script");
+  appScript.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
+  appScript.onload = () => {
+    const authScript = document.createElement("script");
+    authScript.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js";
+    authScript.onload = callback;
+    document.head.appendChild(authScript);
+  };
+  document.head.appendChild(appScript);
+}
+
+// Get active Firebase configuration (from code above OR saved via Settings UI)
+function getActiveFirebaseConfig() {
+  if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.authDomain) {
+    return DEFAULT_FIREBASE_CONFIG;
+  }
+  try {
+    const saved = localStorage.getItem("xyrox_firebase_config");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.apiKey && parsed.authDomain) return parsed;
     }
+  } catch (e) {
+    console.error("Invalid saved Firebase config:", e);
+  }
+  return null;
 }
 
-// Simulates clicking the Google Login button
-function simulateGoogleLogin() {
-    // In the future, you will paste your actual Firebase Google popup code here.
-    // For now, we instantly log you in and save it to the browser.
-    localStorage.setItem('xyrox_auth', 'true');
-    checkAuthStatus();
+// Initialize Firebase Google Auth
+function initRealGoogleAuth() {
+  // First, render any cached Google user immediately so sidebar doesn't flicker
+  const cachedUser = localStorage.getItem("xyrox_google_user");
+  if (cachedUser) {
+    try {
+      currentGoogleUser = JSON.parse(cachedUser);
+      updateGlobalAuthUI(currentGoogleUser);
+    } catch (e) {}
+  } else {
+    updateGlobalAuthUI(null);
+  }
+
+  const config = getActiveFirebaseConfig();
+  const setupBanner = document.getElementById("firebaseSetupBox");
+
+  if (!config) {
+    // Show setup box on settings page if Firebase keys aren't added yet
+    if (setupBanner) setupBanner.classList.remove("hidden");
+    return;
+  }
+
+  if (setupBanner) setupBanner.classList.add("hidden");
+
+  ensureFirebaseSDKLoaded(() => {
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(config);
+      }
+      firebaseAuthInstance = firebase.auth();
+
+      // Listen for real Google Sign-In state changes
+      firebaseAuthInstance.onAuthStateChanged((user) => {
+        if (user) {
+          const emailLower = (user.email || "").toLowerCase();
+          const savedFounderEmail = (localStorage.getItem("xyrox_founder_email") || "").toLowerCase();
+          const isFounder =
+            FOUNDER_EMAILS.map(e => e.toLowerCase()).includes(emailLower) ||
+            (savedFounderEmail && emailLower === savedFounderEmail);
+
+          const customName = localStorage.getItem(`xyrox_custom_name_${user.uid}`);
+
+          currentGoogleUser = {
+            uid: user.uid,
+            displayName: customName || user.displayName || user.email.split("@")[0],
+            googleName: user.displayName || "Google User",
+            email: user.email || "",
+            photoURL: user.photoURL || "",
+            isFounder: isFounder
+          };
+
+          localStorage.setItem("xyrox_google_user", JSON.stringify(currentGoogleUser));
+          updateGlobalAuthUI(currentGoogleUser);
+        } else {
+          currentGoogleUser = null;
+          localStorage.removeItem("xyrox_google_user");
+          updateGlobalAuthUI(null);
+        }
+      });
+    } catch (err) {
+      console.error("Firebase Init Error:", err);
+      alert("Firebase Config Error: " + err.message);
+    }
+  });
 }
 
-// Simulates signing out
-function simulateSignOut() {
-    localStorage.removeItem('xyrox_auth');
-    checkAuthStatus();
+// Trigger the REAL Google Sign-In OAuth Popup
+function signInWithRealGoogle() {
+  const config = getActiveFirebaseConfig();
+  if (!config) {
+    const setupBox = document.getElementById("firebaseSetupBox");
+    if (setupBox) {
+      setupBox.classList.remove("hidden");
+      setupBox.scrollIntoView({ behavior: "smooth" });
+    }
+    alert("Google Sign-In needs your Firebase API Key first. Paste your Firebase config in the setup box below!");
+    return;
+  }
+
+  ensureFirebaseSDKLoaded(() => {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    // Open real Google account selector popup
+    auth.signInWithPopup(provider).catch((error) => {
+      // Fallback to redirect if mobile browser blocks popups
+      if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
+        auth.signInWithRedirect(provider);
+      } else {
+        console.error("Google Sign-In Error:", error);
+        alert("Google Sign-In Error: " + error.message);
+      }
+    });
+  });
 }
+
+// Sign Out of Google
+function signOutFromGoogle() {
+  localStorage.removeItem("xyrox_google_user");
+  currentGoogleUser = null;
+  if (firebaseAuthInstance) {
+    firebaseAuthInstance.signOut().then(() => {
+      updateGlobalAuthUI(null);
+    });
+  } else {
+    updateGlobalAuthUI(null);
+  }
+}
+
+// Update Sidebar, Settings Profile, and Global Chat across the entire site
+function updateGlobalAuthUI(user) {
+  const sidebarName = document.getElementById("sidebarAuthName");
+  const sidebarStatus = document.getElementById("sidebarAuthStatus");
+  const loggedOutView = document.getElementById("loggedOutView");
+  const loggedInView = document.getElementById("loggedInView");
+
+  if (user) {
+    // 1. Update Sidebar Name & Badge
+    if (sidebarName) {
+      sidebarName.innerHTML = user.isFounder
+        ? `${escapeHtml(user.displayName)} <span class="px-1 py-0.5 rounded text-[8px] font-bold bg-white text-black uppercase ml-1">Founder</span>`
+        : escapeHtml(user.displayName);
+    }
+    if (sidebarStatus) {
+      sidebarStatus.textContent = user.email || "Google Verified";
+    }
+
+    // 2. Update Settings Page (if currently on settings.html)
+    if (loggedOutView && loggedInView) {
+      loggedOutView.classList.add("hidden");
+      loggedInView.classList.remove("hidden");
+
+      const profileName = document.getElementById("profileName");
+      const profileEmail = document.getElementById("profileEmail");
+      const profileUid = document.getElementById("profileUid");
+      const profileAvatarImg = document.getElementById("profileAvatarImg");
+      const profileAvatarFallback = document.getElementById("profileAvatarFallback");
+      const customUsernameInput = document.getElementById("customUsernameInput");
+
+      if (profileName) {
+        profileName.innerHTML = user.isFounder
+          ? `${escapeHtml(user.displayName)} <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-white text-black uppercase">Founder</span>`
+          : `${escapeHtml(user.displayName)} <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/10 text-gray-300 border border-white/10 uppercase">Member</span>`;
+      }
+      if (profileEmail) profileEmail.textContent = user.email;
+      if (profileUid) profileUid.textContent = user.uid.slice(0, 12) + "...";
+      if (customUsernameInput && !customUsernameInput.value) {
+        customUsernameInput.value = user.displayName;
+      }
+
+      if (user.photoURL && profileAvatarImg && profileAvatarFallback) {
+        profileAvatarImg.src = user.photoURL;
+        profileAvatarImg.classList.remove("hidden");
+        profileAvatarFallback.classList.add("hidden");
+      } else if (profileAvatarFallback) {
+        profileAvatarFallback.textContent = (user.displayName || "U").charAt(0).toUpperCase();
+        if (profileAvatarImg) profileAvatarImg.classList.add("hidden");
+        profileAvatarFallback.classList.remove("hidden");
+      }
+    }
+
+    // 3. Unlock Global Chat Input (if currently on chat.html)
+    const chatInput = document.getElementById("chatInputContainer");
+    if (chatInput) {
+      chatInput.classList.remove("opacity-50", "cursor-not-allowed");
+      const inputField = chatInput.querySelector("input");
+      const btnField = chatInput.querySelector("button");
+      if (inputField) {
+        inputField.disabled = false;
+        inputField.placeholder = `Message #xyrox-global as ${user.displayName}...`;
+      }
+      if (btnField) btnField.disabled = false;
+    }
+  } else {
+    // Logged Out State
+    if (sidebarName) sidebarName.textContent = "Guest Mode";
+    if (sidebarStatus) sidebarStatus.textContent = "Sign In via Google";
+
+    if (loggedOutView && loggedInView) {
+      loggedOutView.classList.remove("hidden");
+      loggedInView.classList.add("hidden");
+    }
+
+    const chatInput = document.getElementById("chatInputContainer");
+    if (chatInput) {
+      chatInput.classList.add("opacity-50", "cursor-not-allowed");
+      const inputField = chatInput.querySelector("input");
+      const btnField = chatInput.querySelector("button");
+      if (inputField) {
+        inputField.disabled = true;
+        inputField.placeholder = "Sign in with Google in Settings to send messages...";
+      }
+      if (btnField) btnField.disabled = true;
+    }
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+document.addEventListener("DOMContentLoaded", initRealGoogleAuth);
