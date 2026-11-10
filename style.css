@@ -1,228 +1,95 @@
 /* =========================================================
-XYROX OS — UNIVERSAL ADAPTIVE STYLESHEET (style.css)
-Engineered for buttery-smooth 60fps performance on iPad,
-iPhone, Android, Tablet, Laptop, and Desktop PC.
+XYROX OS — ANIMATED SKELETON (style.css)
+Buttery smooth iPad layout. No duplicate sidebars.
 ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 :root {
---xy-bg: #050507;
---xy-panel: rgba(12, 12, 16, 0.74);
---xy-panel-hover: rgba(18, 18, 24, 0.84);
+--xy-bg: #09090b;
+--xy-panel: rgba(15, 15, 20, 0.65);
+--xy-panel-solid: #111116;
 --xy-border: rgba(255, 255, 255, 0.08);
---xy-border-bright: rgba(255, 255, 255, 0.18);
+--xy-glow: rgba(56, 189, 248, 0.5); /* Xyrox Blue Accent */
 }
 ￼ {
 box-sizing: border-box;
 -webkit-tap-highlight-color: transparent;
 }
-/* 1. Universal Viewport & Smooth iPad/iOS Touch Scrolling */
 html, body {
 margin: 0;
 padding: 0;
-width: 100%;
-height: 100dvh;
-background-color: var(--xy-bg) !important;
-color: #f3f4f6 !important;
-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-overflow: hidden;
--webkit-font-smoothing: antialiased;
+width: 100vw;
+height: 100dvh; /* Strict height to prevent whole-page scrolling /
+background-color: var(--xy-bg);
+color: #f3f4f6;
+font-family: 'Inter', sans-serif;
+overflow: hidden; / Stops iPad bouncing */
 }
-/* Completely hide old duplicate headers & sidebars on ALL devices (including iPad & Desktop) */
-body.xyrox-os-ready > div.md:hidden,
-body.xyrox-os-ready > #sidebarOverlay,
-body.xyrox-os-ready > aside,
-body.xyrox-os-ready > #sidebar {
-display: none !important;
-}
-/* Main Content Area: Buttery 1-Finger Scroll on iPad, iPhone & PC */
-body.xyrox-os-ready > main {
-position: relative;
-z-index: 10;
-width: 100% !important;
-max-width: 100vw !important;
-height: 100dvh !important;
-padding-top: 76px !important;
-padding-bottom: 108px !important;
-padding-left: clamp(16px, 4vw, 48px) !important;
-padding-right: clamp(16px, 4vw, 48px) !important;
-overflow-y: auto !important;
-overflow-x: hidden !important;
--webkit-overflow-scrolling: touch !important;
-scroll-behavior: smooth;
-}
-/* 2. Crisp Interactive 3D WebGL Canvas */
-#webgl-container {
-position: fixed !important;
-inset: 0 !important;
-width: 100vw !important;
-height: 100dvh !important;
-z-index: 0 !important;
-pointer-events: none !important;
-opacity: 1 !important;
-}
-/* Subtle Architectural Vignette Over 3D Scene */
-body::before {
-content: "";
+/* --- ANIMATED BACKGROUND --- */
+.animated-bg {
 position: fixed;
 inset: 0;
-z-index: 1;
+z-index: 0;
 pointer-events: none;
-background:
-radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.045) 0%, transparent 58%),
-radial-gradient(circle at 50% 100%, rgba(5, 5, 7, 0.88) 0%, transparent 72%);
+background-color: var(--xy-bg);
+background-image:
+linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+background-size: 40px 40px;
+animation: panGrid 30s linear infinite;
 }
-/* 3. Vercel / Linear Grade Glass Panels */
-.bg-xyrox-panel,
-.xy-card {
-background: var(--xy-panel) !important;
-backdrop-filter: blur(24px) saturate(150%) !important;
--webkit-backdrop-filter: blur(24px) saturate(150%) !important;
-border: 1px solid var(--xy-border) !important;
-box-shadow:
-0 20px 50px -15px rgba(0, 0, 0, 0.78),
-0 1px 0 0 rgba(255, 255, 255, 0.1) inset !important;
-transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-border-color 0.25s ease,
-box-shadow 0.3s ease !important;
-}
-.bg-xyrox-panel:hover,
-.xy-card:hover {
-border-color: var(--xy-border-bright) !important;
-box-shadow:
-0 26px 60px -12px rgba(0, 0, 0, 0.88),
-0 1px 0 0 rgba(255, 255, 255, 0.18) inset !important;
-}
-/* 4. Universal Top OS Command Bar */
-#xyroxUniversalHeader {
-position: fixed;
-top: 0;
-left: 0;
-right: 0;
-height: 58px;
-z-index: 90;
-background: rgba(7, 7, 10, 0.8);
-backdrop-filter: blur(24px) saturate(160%);
--webkit-backdrop-filter: blur(24px) saturate(160%);
-border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 0 16px;
-user-select: none;
-}
-/* 5. Universal Left Slide-Over Drawer (Works on iPad, iPhone & PC) */
-#xyroxUniversalDrawerBackdrop {
-position: fixed;
-inset: 0;
-z-index: 95;
-background: rgba(0, 0, 0, 0.65);
-backdrop-filter: blur(6px);
--webkit-backdrop-filter: blur(6px);
-opacity: 0;
-pointer-events: none;
-transition: opacity 0.28s ease;
-}
-#xyroxUniversalDrawerBackdrop.open {
-opacity: 1;
-pointer-events: auto;
-}
-#xyroxUniversalDrawer {
-position: fixed;
-top: 0;
-left: 0;
-bottom: 0;
-width: 290px;
-max-width: 85vw;
-z-index: 100;
-background: rgba(10, 10, 14, 0.96);
-backdrop-filter: blur(30px);
--webkit-backdrop-filter: blur(30px);
-border-right: 1px solid rgba(255, 255, 255, 0.12);
-transform: translateX(-104%);
-transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1);
-display: flex;
-flex-direction: column;
-justify-content: space-between;
-padding: 20px;
-box-shadow: 20px 0 60px rgba(0, 0, 0, 0.85);
-}
-#xyroxUniversalDrawer.open {
-transform: translateX(0);
-}
-/* 6. Universal Floating Bottom Dock (iPadOS / macOS Style on ALL Devices) */
-#xyroxBottomDock {
-position: fixed;
-bottom: 14px;
-left: 50%;
-transform: translateX(-50%);
-z-index: 85;
-display: flex;
-align-items: center;
-gap: 6px;
-padding: 6px 8px;
-border-radius: 22px;
-background: rgba(11, 11, 16, 0.85);
-backdrop-filter: blur(26px) saturate(170%);
--webkit-backdrop-filter: blur(26px) saturate(170%);
-border: 1px solid rgba(255, 255, 255, 0.13);
-box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.12) inset;
-max-width: 96vw;
-overflow-x: auto;
-}
-.xy-dock-item {
-transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, color 0.2s ease;
-}
-.xy-dock-item:hover {
-transform: translateY(-2px);
-}
-.xy-dock-item:active {
-transform: scale(0.95);
-}
-/* 7. Minimal Scrollbars & Range Sliders */
-::-webkit-scrollbar {
-width: 5px;
-height: 5px;
-}
-::-webkit-scrollbar-track {
-background: transparent;
-}
-::-webkit-scrollbar-thumb {
-background: rgba(255, 255, 255, 0.15);
-border-radius: 9999px;
-}
-input[type="range"] {
--webkit-appearance: none;
-appearance: none;
-background: transparent;
-width: 100%;
-height: 4px;
-}
-input[type="range"]::-webkit-slider-runnable-track {
-background: rgba(255, 255, 255, 0.12);
-height: 4px;
-border-radius: 2px;
-}
-input[type="range"]::-webkit-slider-thumb {
--webkit-appearance: none;
-appearance: none;
-height: 14px;
-width: 14px;
+.ambient-orb {
+position: absolute;
 border-radius: 50%;
-background: #ffffff;
-margin-top: -5px;
-cursor: pointer;
-box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+filter: blur(80px);
+opacity: 0.15;
+animation: floatOrb 15s ease-in-out infinite alternate;
 }
-/* 8. Smooth OS Entrance & Micro-Animations */
-@keyframes xyroxFadeUp {
-from {
-opacity: 0;
-transform: translateY(14px) scale(0.99);
+.orb-1 { width: 400px; height: 400px; background: #38bdf8; top: -100px; left: -100px; }
+.orb-2 { width: 500px; height: 500px; background: #818cf8; bottom: -200px; right: -100px; animation-delay: -5s; }
+@keyframes panGrid {
+0% { background-position: 0 0; }
+100% { background-position: 40px 40px; }
 }
-to {
-opacity: 1;
-transform: translateY(0) scale(1);
+@keyframes floatOrb {
+0% { transform: translate(0, 0); }
+100% { transform: translate(50px, 50px); }
 }
+/* --- UI COMPONENTS --- */
+.xy-panel {
+background: var(--xy-panel);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+border: 1px solid var(--xy-border);
 }
-.animate-fade-in {
-animation: xyroxFadeUp 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.xy-sidebar {
+background: var(--xy-panel-solid);
+border-right: 1px solid var(--xy-border);
+}
+/* Custom Scrollbar for inner areas */
+.scroll-area {
+overflow-y: auto;
+-webkit-overflow-scrolling: touch;
+}
+.scroll-area::-webkit-scrollbar { width: 4px; }
+.scroll-area::-webkit-scrollbar-track { background: transparent; }
+.scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+/* Sidebar Link Glow Effect */
+.nav-link {
+transition: all 0.2s ease;
+}
+.nav-link.active {
+background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, transparent 100%);
+border-left: 3px solid #38bdf8;
+color: white;
+}
+.nav-link:hover:not(.active) {
+background: rgba(255, 255, 255, 0.05);
+}
+/* Top Bar Glow Button */
+.btn-glow {
+box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.btn-glow:active {
+transform: scale(0.95);
 }
