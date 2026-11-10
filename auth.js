@@ -3,12 +3,12 @@
    Uses official Google Firebase Authentication (OAuth 2.0)
    ========================================================= */
 
-// 1. PASTE YOUR FIREBASE CONFIG HERE (Or paste it inside the Settings page UI)
+// 1. HARDCODE YOUR FIREBASE CONFIG HERE (This secures it for all devices)
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: ""
+  apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
+  authDomain: "xyrox6789-17138.firebaseapp.com",
+  projectId: "xyrox6789-17138",
+  appId: "PASTE_YOUR_APP_ID_HERE_IF_YOU_HAVE_IT" 
 };
 
 // 2. PUT YOUR PERSONAL GMAIL HERE SO ONLY YOU GET THE [FOUNDER] BADGE
@@ -37,11 +37,12 @@ function ensureFirebaseSDKLoaded(callback) {
   document.head.appendChild(appScript);
 }
 
-// Get active Firebase configuration (from code above OR saved via Settings UI)
+// Get active Firebase configuration (Now permanently uses the hardcoded one)
 function getActiveFirebaseConfig() {
-  if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.authDomain) {
+  if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
     return DEFAULT_FIREBASE_CONFIG;
   }
+  // Fallback to local storage only if they somehow haven't hardcoded it yet
   try {
     const saved = localStorage.getItem("xyrox_firebase_config");
     if (saved) {
@@ -56,7 +57,7 @@ function getActiveFirebaseConfig() {
 
 // Initialize Firebase Google Auth
 function initRealGoogleAuth() {
-  // First, render any cached Google user immediately so sidebar doesn't flicker
+  // Render cached user immediately so sidebar doesn't flicker
   const cachedUser = localStorage.getItem("xyrox_google_user");
   if (cachedUser) {
     try {
@@ -68,15 +69,11 @@ function initRealGoogleAuth() {
   }
 
   const config = getActiveFirebaseConfig();
-  const setupBanner = document.getElementById("firebaseSetupBox");
 
   if (!config) {
-    // Show setup box on settings page if Firebase keys aren't added yet
-    if (setupBanner) setupBanner.classList.remove("hidden");
+    console.warn("Firebase config is missing. Please hardcode it in auth.js");
     return;
   }
-
-  if (setupBanner) setupBanner.classList.add("hidden");
 
   ensureFirebaseSDKLoaded(() => {
     try {
@@ -89,11 +86,7 @@ function initRealGoogleAuth() {
       firebaseAuthInstance.onAuthStateChanged((user) => {
         if (user) {
           const emailLower = (user.email || "").toLowerCase();
-          const savedFounderEmail = (localStorage.getItem("xyrox_founder_email") || "").toLowerCase();
-          const isFounder =
-            FOUNDER_EMAILS.map(e => e.toLowerCase()).includes(emailLower) ||
-            (savedFounderEmail && emailLower === savedFounderEmail);
-
+          const isFounder = FOUNDER_EMAILS.map(e => e.toLowerCase()).includes(emailLower);
           const customName = localStorage.getItem(`xyrox_custom_name_${user.uid}`);
 
           currentGoogleUser = {
@@ -115,7 +108,6 @@ function initRealGoogleAuth() {
       });
     } catch (err) {
       console.error("Firebase Init Error:", err);
-      alert("Firebase Config Error: " + err.message);
     }
   });
 }
@@ -124,12 +116,7 @@ function initRealGoogleAuth() {
 function signInWithRealGoogle() {
   const config = getActiveFirebaseConfig();
   if (!config) {
-    const setupBox = document.getElementById("firebaseSetupBox");
-    if (setupBox) {
-      setupBox.classList.remove("hidden");
-      setupBox.scrollIntoView({ behavior: "smooth" });
-    }
-    alert("Google Sign-In needs your Firebase API Key first. Paste your Firebase config in the setup box below!");
+    alert("Firebase API Keys are missing in auth.js! Please update the file on GitHub.");
     return;
   }
 
