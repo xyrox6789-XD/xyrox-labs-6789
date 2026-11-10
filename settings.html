@@ -195,21 +195,20 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-4">
           <div>
-            <label class="text-xs font-mono text-gray-400">apiKey</label>
-            <input type="text" id="cfgApiKey" placeholder="AIzaSy..." class="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white/30" />
+            <label class="text-xs font-mono text-gray-400 mb-1 block">Paste Entire Firebase Config Block Here</label>
+            <textarea id="cfgRaw" rows="7" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs font-mono text-white focus:outline-none focus:border-white/30" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "xyrox-....firebaseapp.com",
+  projectId: "xyrox-...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};'></textarea>
           </div>
           <div>
-            <label class="text-xs font-mono text-gray-400">authDomain</label>
-            <input type="text" id="cfgAuthDomain" placeholder="your-app.firebaseapp.com" class="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white/30" />
-          </div>
-          <div>
-            <label class="text-xs font-mono text-gray-400">projectId</label>
-            <input type="text" id="cfgProjectId" placeholder="your-app-id" class="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white/30" />
-          </div>
-          <div>
-            <label class="text-xs font-mono text-gray-400">Your Founder Gmail (For [FOUNDER] Badge)</label>
+            <label class="text-xs font-mono text-gray-400 block">Your Founder Gmail (For [FOUNDER] Badge)</label>
             <input type="email" id="cfgFounderEmail" placeholder="yourname@gmail.com" class="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white/30" />
           </div>
         </div>
@@ -274,27 +273,45 @@
 
       // Pre-fill saved config if present
       try {
-        const saved = JSON.parse(localStorage.getItem('xyrox_firebase_config') || '{}');
-        if (saved.apiKey) document.getElementById('cfgApiKey').value = saved.apiKey;
-        if (saved.authDomain) document.getElementById('cfgAuthDomain').value = saved.authDomain;
-        if (saved.projectId) document.getElementById('cfgProjectId').value = saved.projectId;
+        const savedRaw = localStorage.getItem('xyrox_firebase_raw') || '';
+        if (savedRaw) document.getElementById('cfgRaw').value = savedRaw;
         const savedFounder = localStorage.getItem('xyrox_founder_email') || '';
         if (savedFounder) document.getElementById('cfgFounderEmail').value = savedFounder;
       } catch (e) {}
 
       // Save Firebase Config from UI
       document.getElementById('btnSaveFirebaseConfig').addEventListener('click', () => {
-        const apiKey = document.getElementById('cfgApiKey').value.trim();
-        const authDomain = document.getElementById('cfgAuthDomain').value.trim();
-        const projectId = document.getElementById('cfgProjectId').value.trim();
+        const rawConfig = document.getElementById('cfgRaw').value.trim();
         const founderEmail = document.getElementById('cfgFounderEmail').value.trim();
 
-        if (!apiKey || !authDomain) {
-          alert('Please enter at least your Firebase apiKey and authDomain.');
+        if (!rawConfig.includes('apiKey')) {
+          alert('Please paste the entire firebaseConfig block from Google.');
           return;
         }
 
-        localStorage.setItem('xyrox_firebase_config', JSON.stringify({ apiKey, authDomain, projectId }));
+        // Extract properties using regex to avoid eval
+        const extract = (key) => {
+          const match = rawConfig.match(new RegExp(`${key}\\s*:\\s*["']([^"']+)["']`));
+          return match ? match[1] : '';
+        };
+
+        const configObj = {
+          apiKey: extract('apiKey'),
+          authDomain: extract('authDomain'),
+          projectId: extract('projectId'),
+          storageBucket: extract('storageBucket'),
+          messagingSenderId: extract('messagingSenderId'),
+          appId: extract('appId'),
+          measurementId: extract('measurementId')
+        };
+
+        if (!configObj.apiKey || !configObj.authDomain) {
+          alert('Could not read apiKey or authDomain. Make sure you pasted the exact code block.');
+          return;
+        }
+
+        localStorage.setItem('xyrox_firebase_raw', rawConfig);
+        localStorage.setItem('xyrox_firebase_config', JSON.stringify(configObj));
         if (founderEmail) localStorage.setItem('xyrox_founder_email', founderEmail);
 
         initRealGoogleAuth();
