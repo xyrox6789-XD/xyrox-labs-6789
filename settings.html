@@ -1,333 +1,253 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>XYROX-UTILITIES | Settings & Google Auth</title>
+/* =========================================================
+   XYROX-UTILITIES — REAL GOOGLE SIGN-IN ENGINE (auth.js)
+   Uses official Google Firebase Authentication (OAuth 2.0)
+   ========================================================= */
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts: Inter & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+// 1. HARDCODE YOUR FIREBASE CONFIG HERE (This secures it for all devices)
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
+  authDomain: "xyrox6789-17138.firebaseapp.com",
+  projectId: "xyrox6789-17138",
+  appId: "PASTE_YOUR_APP_ID_HERE_IF_YOU_HAVE_IT" 
+};
 
-  <!-- Three.js for 3D Background -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+// 2. PUT YOUR PERSONAL GMAIL HERE SO ONLY YOU GET THE [FOUNDER] BADGE
+const FOUNDER_EMAILS = [
+  "xyrox6789@gmail.com" // <-- Replace with your real Gmail address
+];
 
-  <!-- Official Google Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+let firebaseAuthInstance = null;
+let currentGoogleUser = null;
 
-  <!-- Global Master Stylesheet -->
-  <link rel="stylesheet" href="style.css" />
+// Dynamically load Firebase SDKs on any page if not already loaded
+function ensureFirebaseSDKLoaded(callback) {
+  if (typeof firebase !== "undefined" && firebase.auth) {
+    callback();
+    return;
+  }
 
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
-          colors: { 
-            xyrox: { bg: '#060608', panel: 'rgba(17, 17, 21, 0.72)', border: 'rgba(255, 255, 255, 0.09)' } 
-          }
-        }
-      }
-    };
-  </script>
-</head>
-<body class="h-screen w-screen bg-[#060608] text-gray-200 flex flex-col md:flex-row antialiased selection:bg-white/20 overflow-hidden">
+  const appScript = document.createElement("script");
+  appScript.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
+  appScript.onload = () => {
+    const authScript = document.createElement("script");
+    authScript.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js";
+    authScript.onload = callback;
+    document.head.appendChild(authScript);
+  };
+  document.head.appendChild(appScript);
+}
 
-  <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
-  <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none"></div>
-
-  <!-- ================= 1.5 MOBILE HEADER ================= -->
-  <div class="md:hidden flex items-center justify-between px-5 py-4 bg-xyrox-panel border-b border-xyrox-border z-30 relative">
-    <h1 class="font-semibold tracking-widest text-xs text-white uppercase">XYROX-UTILITIES</h1>
-    <button id="mobileMenuBtn" class="text-white p-1.5 bg-white/5 rounded-lg border border-white/10">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    </button>
-  </div>
-
-  <!-- Mobile Backdrop Overlay -->
-  <div id="sidebarOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden transition-opacity"></div>
-
-  <!-- ================= 2. LEFT SIDEBAR NAVIGATION ================= -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-2xl border-r border-xyrox-border shadow-2xl h-full">
-    <div>
-      <div class="h-20 items-center px-6 border-b border-xyrox-border hidden md:flex">
-        <h1 class="font-semibold tracking-widest text-xs text-white uppercase opacity-90">XYROX-UTILITIES</h1>
-      </div>
-      
-      <nav class="p-4 space-y-2">
-        <a href="index.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
-          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-          Command
-        </a>
-        <a href="audio.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
-          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
-          Audio Studio
-        </a>
-        <a href="calculator.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
-          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-          Calculator
-        </a>
-        <a href="chat.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
-          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
-          Global Chat
-        </a>
-        <a href="ai.html" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-transparent">
-          <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          Xyrox AI
-        </a>
-      </nav>
-    </div>
-
-    <!-- Active Tab: Settings / Auth Footer -->
-    <div class="p-4 border-t border-xyrox-border">
-      <a href="settings.html" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all bg-white/10 text-white border border-white/10 shadow-sm">
-        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/10">
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-        </div>
-        <div class="flex flex-col items-start leading-tight overflow-hidden">
-          <span class="text-gray-100 font-medium text-xs truncate" id="sidebarAuthName">Guest Mode</span>
-          <span class="text-[10px] text-gray-400 mt-0.5 truncate" id="sidebarAuthStatus">Sign In via Google</span>
-        </div>
-      </a>
-    </div>
-  </aside>
-
-  <!-- ================= 3. SETTINGS & REAL GOOGLE SIGN-IN ================= -->
-  <main class="flex-1 h-full overflow-y-auto relative z-10 p-6 md:p-12 animate-fade-in">
-    <div class="max-w-3xl mx-auto space-y-8">
-      
-      <!-- Header -->
-      <div class="border-b border-white/10 pb-6 flex items-center justify-between">
-        <div>
-          <h2 class="text-3xl font-medium text-white tracking-tight">Account &amp; Google Identity</h2>
-          <p class="text-sm text-gray-400 mt-1">Sign in with your real Google account to unlock Global Chat and profile customization.</p>
-        </div>
-        <button id="btnToggleConfig" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-gray-300 transition">
-          Firebase Keys
-        </button>
-      </div>
-
-      <!-- MAIN AUTHENTICATION CARD -->
-      <div class="bg-xyrox-panel backdrop-blur-xl border border-xyrox-border rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center">
-        
-        <!-- VIEW A: LOGGED OUT (Real Google Sign-In Button) -->
-        <div id="loggedOutView" class="w-full max-w-sm mx-auto space-y-6">
-          <div class="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl mx-auto flex items-center justify-center">
-            <svg class="w-8 h-8 text-white" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-          </div>
-
-          <div>
-            <h3 class="text-xl font-semibold text-white">Sign In with Google</h3>
-            <p class="text-sm text-gray-400 mt-1">Opens the official Google OAuth login window. Your username and avatar are synced from your Google profile.</p>
-          </div>
-          
-          <button id="btnGoogleSignIn" class="w-full flex items-center justify-center gap-3 py-3.5 px-6 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition shadow-lg">
-            <svg class="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </button>
-        </div>
-
-        <!-- VIEW B: LOGGED IN (Real Google User Profile & Customization) -->
-        <div id="loggedInView" class="w-full max-w-md mx-auto space-y-6 hidden">
-          <div class="relative w-20 h-20 mx-auto">
-            <img id="profileAvatarImg" src="" alt="Google Avatar" class="w-20 h-20 rounded-full object-cover border-2 border-white/20 shadow-lg hidden" />
-            <div id="profileAvatarFallback" class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-white/20">G</div>
-          </div>
-          
-          <div>
-            <h3 id="profileName" class="text-2xl font-semibold text-white flex items-center justify-center gap-2">
-              Google User
-            </h3>
-            <p id="profileEmail" class="text-sm text-gray-400 font-mono mt-1">user@gmail.com</p>
-          </div>
-
-          <!-- Customize Display Name -->
-          <div class="p-4 bg-black/40 border border-white/10 rounded-2xl text-left space-y-3">
-            <label class="text-xs font-mono uppercase tracking-wider text-gray-400">Customize Display Username</label>
-            <div class="flex gap-2">
-              <input type="text" id="customUsernameInput" placeholder="Enter display name..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-white/30" />
-              <button id="btnSaveUsername" class="px-4 py-2 bg-white text-black text-xs font-semibold rounded-xl hover:bg-gray-200 transition">Save</button>
-            </div>
-          </div>
-
-          <!-- Real Account Details -->
-          <div class="p-4 bg-white/5 border border-white/10 rounded-2xl text-left space-y-2.5 text-xs font-mono">
-            <div class="flex justify-between items-center">
-              <span class="text-gray-400">Google UID</span>
-              <span class="text-gray-300" id="profileUid">---</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-gray-400">Auth Provider</span>
-              <span class="text-white">google.com (OAuth 2.0)</span>
-            </div>
-          </div>
-          
-          <button id="btnSignOut" class="w-full py-3 border border-white/15 text-white text-sm font-medium rounded-xl hover:bg-white/10 transition">
-            Sign Out of Google Account
-          </button>
-        </div>
-
-      </div>
-
-      <!-- FIREBASE GOOGLE OAUTH CONFIGURATION PANEL -->
-      <div id="firebaseSetupBox" class="bg-xyrox-panel backdrop-blur-xl border border-xyrox-border rounded-3xl p-6 md:p-8 space-y-5">
-        <div>
-          <span class="text-[10px] font-mono uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">One-Time Setup Required for Real Google Popup</span>
-          <h3 class="text-lg font-semibold text-white mt-3">Connect Your Google Firebase Project</h3>
-          <p class="text-xs text-gray-400 mt-1 leading-relaxed">
-            For Google to open the real <code class="text-gray-200">accounts.google.com</code> sign-in window on <code class="text-gray-200">xyrox6789-xd.github.io</code>, paste your Firebase Web Config below (or directly inside <code class="text-gray-200">auth.js</code>).
-          </p>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <label class="text-xs font-mono text-gray-400 mb-1 block">Paste Entire Firebase Config Block Here</label>
-            <textarea id="cfgRaw" rows="7" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs font-mono text-white focus:outline-none focus:border-white/30" placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "xyrox-....firebaseapp.com",
-  projectId: "xyrox-...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "..."
-};'></textarea>
-          </div>
-          <div>
-            <label class="text-xs font-mono text-gray-400 block">Your Founder Gmail (For [FOUNDER] Badge)</label>
-            <input type="email" id="cfgFounderEmail" placeholder="yourname@gmail.com" class="w-full mt-1 bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-white/30" />
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button id="btnSaveFirebaseConfig" class="px-5 py-2.5 bg-white text-black text-xs font-semibold rounded-xl hover:bg-gray-200 transition">
-            Save &amp; Activate Real Google Login
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </main>
-
-  <!-- ================= 4. SCRIPTS ================= -->
-  <script src="app.js"></script>
-  <script src="auth.js"></script>
-
-  <script>
-    // Mobile Sidebar Drawer
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-    if (mobileMenuBtn) {
-      mobileMenuBtn.addEventListener('click', () => {
-        sidebar.classList.remove('-translate-x-full');
-        sidebarOverlay.classList.remove('hidden');
-      });
+// Get active Firebase configuration (Now permanently uses the hardcoded one)
+function getActiveFirebaseConfig() {
+  if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
+    return DEFAULT_FIREBASE_CONFIG;
+  }
+  // Fallback to local storage only if they somehow haven't hardcoded it yet
+  try {
+    const saved = localStorage.getItem("xyrox_firebase_config");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.apiKey && parsed.authDomain) return parsed;
     }
-    if (sidebarOverlay) {
-      sidebarOverlay.addEventListener('click', () => {
-        sidebar.classList.add('-translate-x-full');
-        sidebarOverlay.classList.add('hidden');
+  } catch (e) {
+    console.error("Invalid saved Firebase config:", e);
+  }
+  return null;
+}
+
+// Initialize Firebase Google Auth
+function initRealGoogleAuth() {
+  // Render cached user immediately so sidebar doesn't flicker
+  const cachedUser = localStorage.getItem("xyrox_google_user");
+  if (cachedUser) {
+    try {
+      currentGoogleUser = JSON.parse(cachedUser);
+      updateGlobalAuthUI(currentGoogleUser);
+    } catch (e) {}
+  } else {
+    updateGlobalAuthUI(null);
+  }
+
+  const config = getActiveFirebaseConfig();
+
+  if (!config) {
+    console.warn("Firebase config is missing. Please hardcode it in auth.js");
+    return;
+  }
+
+  ensureFirebaseSDKLoaded(() => {
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(config);
+      }
+      firebaseAuthInstance = firebase.auth();
+
+      // Listen for real Google Sign-In state changes
+      firebaseAuthInstance.onAuthStateChanged((user) => {
+        if (user) {
+          const emailLower = (user.email || "").toLowerCase();
+          const isFounder = FOUNDER_EMAILS.map(e => e.toLowerCase()).includes(emailLower);
+          const customName = localStorage.getItem(`xyrox_custom_name_${user.uid}`);
+
+          currentGoogleUser = {
+            uid: user.uid,
+            displayName: customName || user.displayName || user.email.split("@")[0],
+            googleName: user.displayName || "Google User",
+            email: user.email || "",
+            photoURL: user.photoURL || "",
+            isFounder: isFounder
+          };
+
+          localStorage.setItem("xyrox_google_user", JSON.stringify(currentGoogleUser));
+          updateGlobalAuthUI(currentGoogleUser);
+        } else {
+          currentGoogleUser = null;
+          localStorage.removeItem("xyrox_google_user");
+          updateGlobalAuthUI(null);
+        }
       });
+    } catch (err) {
+      console.error("Firebase Init Error:", err);
     }
+  });
+}
 
-    // Bind Real Google Login & Sign Out Buttons
-    document.addEventListener('DOMContentLoaded', () => {
-      const btnSignIn = document.getElementById('btnGoogleSignIn');
-      const btnSignOut = document.getElementById('btnSignOut');
-      const btnToggleConfig = document.getElementById('btnToggleConfig');
-      const setupBox = document.getElementById('firebaseSetupBox');
+// Trigger the REAL Google Sign-In OAuth Popup
+function signInWithRealGoogle() {
+  const config = getActiveFirebaseConfig();
+  if (!config) {
+    alert("Firebase API Keys are missing in auth.js! Please update the file on GitHub.");
+    return;
+  }
 
-      if (btnSignIn) {
-        btnSignIn.addEventListener('click', () => {
-          signInWithRealGoogle();
-        });
+  ensureFirebaseSDKLoaded(() => {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config);
+    }
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    // Open real Google account selector popup
+    auth.signInWithPopup(provider).catch((error) => {
+      // Fallback to redirect if mobile browser blocks popups
+      if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
+        auth.signInWithRedirect(provider);
+      } else {
+        console.error("Google Sign-In Error:", error);
+        alert("Google Sign-In Error: " + error.message);
       }
-
-      if (btnSignOut) {
-        btnSignOut.addEventListener('click', () => {
-          signOutFromGoogle();
-        });
-      }
-
-      if (btnToggleConfig && setupBox) {
-        btnToggleConfig.addEventListener('click', () => {
-          setupBox.classList.toggle('hidden');
-        });
-      }
-
-      // Pre-fill saved config if present
-      try {
-        const savedRaw = localStorage.getItem('xyrox_firebase_raw') || '';
-        if (savedRaw) document.getElementById('cfgRaw').value = savedRaw;
-        const savedFounder = localStorage.getItem('xyrox_founder_email') || '';
-        if (savedFounder) document.getElementById('cfgFounderEmail').value = savedFounder;
-      } catch (e) {}
-
-      // Save Firebase Config from UI
-      document.getElementById('btnSaveFirebaseConfig').addEventListener('click', () => {
-        const rawConfig = document.getElementById('cfgRaw').value.trim();
-        const founderEmail = document.getElementById('cfgFounderEmail').value.trim();
-
-        if (!rawConfig.includes('apiKey')) {
-          alert('Please paste the entire firebaseConfig block from Google.');
-          return;
-        }
-
-        // Extract properties using regex to avoid eval
-        const extract = (key) => {
-          const match = rawConfig.match(new RegExp(`${key}\\s*:\\s*["']([^"']+)["']`));
-          return match ? match[1] : '';
-        };
-
-        const configObj = {
-          apiKey: extract('apiKey'),
-          authDomain: extract('authDomain'),
-          projectId: extract('projectId'),
-          storageBucket: extract('storageBucket'),
-          messagingSenderId: extract('messagingSenderId'),
-          appId: extract('appId'),
-          measurementId: extract('measurementId')
-        };
-
-        if (!configObj.apiKey || !configObj.authDomain) {
-          alert('Could not read apiKey or authDomain. Make sure you pasted the exact code block.');
-          return;
-        }
-
-        localStorage.setItem('xyrox_firebase_raw', rawConfig);
-        localStorage.setItem('xyrox_firebase_config', JSON.stringify(configObj));
-        if (founderEmail) localStorage.setItem('xyrox_founder_email', founderEmail);
-
-        initRealGoogleAuth();
-        alert('Firebase Google Auth activated! Now click "Continue with Google" above.');
-      });
-
-      // Save Custom Display Username
-      document.getElementById('btnSaveUsername').addEventListener('click', () => {
-        const newName = document.getElementById('customUsernameInput').value.trim();
-        if (!newName || !currentGoogleUser) return;
-        localStorage.setItem(`xyrox_custom_name_${currentGoogleUser.uid}`, newName);
-        currentGoogleUser.displayName = newName;
-        localStorage.setItem('xyrox_google_user', JSON.stringify(currentGoogleUser));
-        updateGlobalAuthUI(currentGoogleUser);
-      });
     });
-  </script>
-</body>
-</html>
+  });
+}
+
+// Sign Out of Google
+function signOutFromGoogle() {
+  localStorage.removeItem("xyrox_google_user");
+  currentGoogleUser = null;
+  if (firebaseAuthInstance) {
+    firebaseAuthInstance.signOut().then(() => {
+      updateGlobalAuthUI(null);
+    });
+  } else {
+    updateGlobalAuthUI(null);
+  }
+}
+
+// Update Sidebar, Settings Profile, and Global Chat across the entire site
+function updateGlobalAuthUI(user) {
+  const sidebarName = document.getElementById("sidebarAuthName");
+  const sidebarStatus = document.getElementById("sidebarAuthStatus");
+  const loggedOutView = document.getElementById("loggedOutView");
+  const loggedInView = document.getElementById("loggedInView");
+
+  if (user) {
+    // 1. Update Sidebar Name & Badge
+    if (sidebarName) {
+      sidebarName.innerHTML = user.isFounder
+        ? `${escapeHtml(user.displayName)} <span class="px-1 py-0.5 rounded text-[8px] font-bold bg-white text-black uppercase ml-1">Founder</span>`
+        : escapeHtml(user.displayName);
+    }
+    if (sidebarStatus) {
+      sidebarStatus.textContent = user.email || "Google Verified";
+    }
+
+    // 2. Update Settings Page (if currently on settings.html)
+    if (loggedOutView && loggedInView) {
+      loggedOutView.classList.add("hidden");
+      loggedInView.classList.remove("hidden");
+
+      const profileName = document.getElementById("profileName");
+      const profileEmail = document.getElementById("profileEmail");
+      const profileUid = document.getElementById("profileUid");
+      const profileAvatarImg = document.getElementById("profileAvatarImg");
+      const profileAvatarFallback = document.getElementById("profileAvatarFallback");
+      const customUsernameInput = document.getElementById("customUsernameInput");
+
+      if (profileName) {
+        profileName.innerHTML = user.isFounder
+          ? `${escapeHtml(user.displayName)} <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-white text-black uppercase">Founder</span>`
+          : `${escapeHtml(user.displayName)} <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/10 text-gray-300 border border-white/10 uppercase">Member</span>`;
+      }
+      if (profileEmail) profileEmail.textContent = user.email;
+      if (profileUid) profileUid.textContent = user.uid.slice(0, 12) + "...";
+      if (customUsernameInput && !customUsernameInput.value) {
+        customUsernameInput.value = user.displayName;
+      }
+
+      if (user.photoURL && profileAvatarImg && profileAvatarFallback) {
+        profileAvatarImg.src = user.photoURL;
+        profileAvatarImg.classList.remove("hidden");
+        profileAvatarFallback.classList.add("hidden");
+      } else if (profileAvatarFallback) {
+        profileAvatarFallback.textContent = (user.displayName || "U").charAt(0).toUpperCase();
+        if (profileAvatarImg) profileAvatarImg.classList.add("hidden");
+        profileAvatarFallback.classList.remove("hidden");
+      }
+    }
+
+    // 3. Unlock Global Chat Input (if currently on chat.html)
+    const chatInput = document.getElementById("chatInputContainer");
+    if (chatInput) {
+      chatInput.classList.remove("opacity-50", "cursor-not-allowed");
+      const inputField = chatInput.querySelector("input");
+      const btnField = chatInput.querySelector("button");
+      if (inputField) {
+        inputField.disabled = false;
+        inputField.placeholder = `Message #xyrox-global as ${user.displayName}...`;
+      }
+      if (btnField) btnField.disabled = false;
+    }
+  } else {
+    // Logged Out State
+    if (sidebarName) sidebarName.textContent = "Guest Mode";
+    if (sidebarStatus) sidebarStatus.textContent = "Sign In via Google";
+
+    if (loggedOutView && loggedInView) {
+      loggedOutView.classList.remove("hidden");
+      loggedInView.classList.add("hidden");
+    }
+
+    const chatInput = document.getElementById("chatInputContainer");
+    if (chatInput) {
+      chatInput.classList.add("opacity-50", "cursor-not-allowed");
+      const inputField = chatInput.querySelector("input");
+      const btnField = chatInput.querySelector("button");
+      if (inputField) {
+        inputField.disabled = true;
+        inputField.placeholder = "Sign in with Google in Settings to send messages...";
+      }
+      if (btnField) btnField.disabled = true;
+    }
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+document.addEventListener("DOMContentLoaded", initRealGoogleAuth);
