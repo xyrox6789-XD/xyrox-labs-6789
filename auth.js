@@ -17,6 +17,10 @@ const FOUNDER_EMAILS = [
 let firebaseAuthInstance = null;
 let currentGoogleUser = null;
 
+function getActiveFirebaseConfig() {
+  return DEFAULT_FIREBASE_CONFIG;
+}
+
 function ensureFirebaseSDKLoaded(callback) {
   if (typeof firebase !== "undefined" && firebase.auth) {
     callback();
@@ -33,20 +37,20 @@ function ensureFirebaseSDKLoaded(callback) {
   document.head.appendChild(appScript);
 }
 
-function getActiveFirebaseConfig() {
-  // Always use the clean hardcoded config so every phone/device works out of the box
-  localStorage.removeItem("xyrox_firebase_config");
-  return DEFAULT_FIREBASE_CONFIG;
-}
-
-// Injects a 1-tap Sign-In / Profile pill at the top-right of every page
+// Injects a 1-tap Sign-In / Profile pill inside the Universal Top Header Bar
 function injectTopAuthQuickBar() {
   if (document.getElementById("xyroxTopAuthWidget")) return;
 
+  const header = document.getElementById("xyroxUniversalHeader");
   const widget = document.createElement("div");
   widget.id = "xyroxTopAuthWidget";
-  widget.className = "fixed top-3.5 right-4 z-40 flex items-center gap-2";
-  document.body.appendChild(widget);
+  widget.className = "flex items-center gap-2";
+  if (header) {
+    header.appendChild(widget);
+  } else {
+    widget.className = "fixed top-2.5 right-4 z-50 flex items-center gap-2";
+    document.body.appendChild(widget);
+  }
 }
 
 function initRealGoogleAuth() {
