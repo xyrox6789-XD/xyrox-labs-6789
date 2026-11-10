@@ -3,631 +3,245 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>XYROX-UTILITIES | Command Center</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>XYROX | Home</title>
   
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Tailwind CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Official Google Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-  <!-- Three.js (For the Master 3D Background in app.js) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- Global Master Stylesheet -->
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Tailwind Configuration -->
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { 
-            sans: ['Inter', 'sans-serif'], 
-            mono: ['JetBrains Mono', 'monospace'] 
-          },
-          colors: { 
-            xyrox: { 
-              bg: '#060608', 
-              panel: 'rgba(17, 17, 21, 0.72)', 
-              border: 'rgba(255, 255, 255, 0.09)' 
-            } 
-          }
-        }
-      }
-    };
-  </script>
-
+  <!-- ================= INJECTED STYLESHEET (No need for style.css) ================= -->
   <style>
-    /* Direct-input timer clean styling */
-    input[type="number"]::-webkit-inner-spin-button, 
-    input[type="number"]::-webkit-outer-spin-button { 
-      -webkit-appearance: none; 
-      margin: 0; 
+    :root {
+      --xy-bg: #09090b;
+      --xy-panel: rgba(15, 15, 20, 0.65);
+      --xy-panel-solid: #111116;
+      --xy-border: rgba(255, 255, 255, 0.08);
     }
-    input[type="number"] { -moz-appearance: textfield; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; width: 100vw; height: 100dvh;
+      background-color: var(--xy-bg); color: #f3f4f6;
+      font-family: 'Inter', sans-serif; overflow: hidden; /* Stops iPad bouncing */
+    }
 
-    /* SVG Ring smooth transition */
-    .progress-ring__circle {
-      transition: stroke-dashoffset 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
+    /* Animated Grid Background */
+    .animated-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-color: var(--xy-bg);
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: panGrid 30s linear infinite;
     }
+    .ambient-orb {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15;
+      animation: floatOrb 15s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #38bdf8; top: -100px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: #818cf8; bottom: -200px; right: -100px; animation-delay: -5s; }
+
+    @keyframes panGrid { 0% { background-position: 0 0; } 100% { background-position: 40px 40px; } }
+    @keyframes floatOrb { 0% { transform: translate(0, 0); } 100% { transform: translate(50px, 50px); } }
+
+    /* UI Components */
+    .xy-sidebar { background: var(--xy-panel-solid); border-right: 1px solid var(--xy-border); }
+    .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+    .nav-link { transition: all 0.2s ease; }
+    .nav-link.active {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, transparent 100%);
+      border-left: 3px solid #38bdf8; color: white;
+    }
+    .nav-link:hover:not(.active) { background: rgba(255, 255, 255, 0.05); }
+    .btn-glow { box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); transition: all 0.2s ease; }
+    .btn-glow:active { transform: scale(0.95); }
   </style>
 </head>
-<body class="h-screen w-screen bg-[#060608] text-gray-200 overflow-hidden flex flex-col md:flex-row antialiased selection:bg-white/20">
+<body class="flex h-screen w-screen overflow-hidden antialiased selection:bg-sky-500/30">
 
-  <!-- ================= 1. 3D BACKGROUND CONTAINER ================= -->
-  <div id="webgl-container" class="fixed inset-0 z-0 pointer-events-none"></div>
-
-  <!-- ================= 1.5 MOBILE TOP BAR ================= -->
-  <div class="md:hidden flex items-center justify-between px-5 py-4 bg-xyrox-panel backdrop-blur-xl border-b border-xyrox-border z-30 relative">
-    <div class="flex items-center gap-2.5">
-      <div class="w-6 h-6 rounded-md bg-white/10 border border-white/20 flex items-center justify-center font-mono text-[11px] font-bold text-white">X</div>
-      <h1 class="font-semibold tracking-[0.2em] text-xs text-white uppercase">XYROX-UTILITIES</h1>
-    </div>
-    <button id="mobileMenuBtn" class="text-white p-1.5 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    </button>
+  <!-- ANIMATED BACKGROUND -->
+  <div class="animated-bg">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
   </div>
 
-  <!-- Mobile Backdrop Overlay -->
-  <div id="sidebarOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden transition-opacity"></div>
-
-  <!-- ================= 2. UPGRADED LEFT CHANNELS SIDEBAR ================= -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col justify-between shrink-0 bg-xyrox-panel backdrop-blur-2xl border-r border-xyrox-border shadow-2xl h-full select-none">
-    
-    <div>
-      <!-- Brand Identity Header -->
-      <div class="h-20 items-center justify-between px-6 border-b border-xyrox-border hidden md:flex">
-        <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center shadow-inner">
-            <span class="font-mono text-xs font-bold text-white tracking-tighter">XY</span>
-          </div>
-          <h1 class="font-semibold tracking-[0.18em] text-xs text-white uppercase">XYROX-UTILITIES</h1>
+  <!-- ================= LEFT SIDEBAR ================= -->
+  <aside class="xy-sidebar w-64 h-full flex flex-col z-20 shrink-0 hidden md:flex shadow-2xl relative">
+    <div class="h-20 flex items-center gap-3 px-6 border-b border-white/5">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center p-[1px]">
+        <div class="w-full h-full bg-[#111116] rounded-full flex items-center justify-center">
+          <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 22 20 2 20"></polygon></svg>
         </div>
       </div>
-
-      <!-- Channels Navigation List -->
-      <div class="p-4 space-y-6">
-        
-        <!-- Group 1: Core Workspace Channels -->
-        <div>
-          <div class="px-3 mb-2 flex items-center justify-between">
-            <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-gray-500">Workspace Channels</span>
-          </div>
-          <nav class="space-y-1">
-            <!-- Channel 01: Command Center (Active) -->
-            <a href="index.html" class="group relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all bg-white/[0.11] text-white border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-              <span class="absolute left-0 top-2 bottom-2 w-1 bg-white rounded-r-full"></span>
-              <div class="flex items-center gap-3">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                <span>Command</span>
-              </div>
-              <span class="text-[10px] font-mono text-gray-400 bg-black/40 px-1.5 py-0.5 rounded border border-white/10">01</span>
-            </a>
-
-            <!-- Channel 02: Audio Studio -->
-            <a href="audio.html" class="group w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/5">
-              <div class="flex items-center gap-3">
-                <svg class="w-4 h-4 opacity-70 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
-                <span>Audio Studio</span>
-              </div>
-              <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition">02</span>
-            </a>
-
-            <!-- Channel 03: Calculator -->
-            <a href="calculator.html" class="group w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/5">
-              <div class="flex items-center gap-3">
-                <svg class="w-4 h-4 opacity-70 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                <span>Calculator</span>
-              </div>
-              <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition">03</span>
-            </a>
-          </nav>
-        </div>
-
-        <!-- Group 2: Network & Intelligence -->
-        <div>
-          <div class="px-3 mb-2 flex items-center justify-between">
-            <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-gray-500">Network & Neural</span>
-          </div>
-          <nav class="space-y-1">
-            <!-- Channel 04: Global Chat -->
-            <a href="chat.html" class="group w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/5">
-              <div class="flex items-center gap-3">
-                <svg class="w-4 h-4 opacity-70 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
-                <span>Global Chat</span>
-              </div>
-              <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition">04</span>
-            </a>
-
-            <!-- Channel 05: Xyrox AI -->
-            <a href="ai.html" class="group w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/5">
-              <div class="flex items-center gap-3">
-                <svg class="w-4 h-4 opacity-70 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>Xyrox AI</span>
-              </div>
-              <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition">05</span>
-            </a>
-          </nav>
-        </div>
-
+      <div>
+        <h1 class="font-bold tracking-wider text-sm text-white uppercase leading-none">XYROX</h1>
+        <p class="text-[9px] text-gray-500 font-mono tracking-widest uppercase mt-0.5">Engineered OS</p>
       </div>
     </div>
 
-    <!-- Bottom Account & Settings Channel -->
-    <div class="p-4 border-t border-xyrox-border bg-black/20">
-      <a href="settings.html" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm transition-all bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-white/15 group">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/10 group-hover:border-white/25 transition-all">
-            <svg class="w-4 h-4 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          </div>
-          <div class="flex flex-col items-start leading-tight">
-            <span class="text-gray-100 font-medium text-xs" id="sidebarAuthName">Guest Mode</span>
-            <span class="text-[10px] text-gray-500 mt-0.5" id="sidebarAuthStatus">Sign In via Google</span>
-          </div>
+    <nav class="flex-1 scroll-area p-3 space-y-6">
+      <!-- MAIN GROUP -->
+      <div>
+        <div class="px-4 text-[10px] font-mono uppercase tracking-widest text-gray-500 mb-2 flex items-center gap-2">
+          <svg class="w-3 h-3 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> MAIN
         </div>
-        <svg class="w-4 h-4 text-gray-500 group-hover:text-white transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-      </a>
-    </div>
+        <div class="space-y-0.5">
+          <a href="#" class="nav-link active flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium">
+            <svg class="w-4 h-4 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Home
+          </a>
+          <a href="#" class="nav-link flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <div class="flex items-center gap-3"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg> Tasks</div>
+            <span class="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 font-mono border border-white/5">0</span>
+          </a>
+          <a href="#" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Focus
+          </a>
+          <a href="#" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Calendar
+          </a>
+          <a href="#" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> AI Assistant
+          </a>
+        </div>
+      </div>
+
+      <!-- GROW & ACCOUNT (Condensed for brevity) -->
+      <div>
+        <div class="px-4 text-[10px] font-mono uppercase tracking-widest text-gray-500 mb-2 flex items-center gap-2">
+          <svg class="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg> GROW
+        </div>
+        <div class="space-y-0.5">
+          <a href="#" class="nav-link flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <svg class="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Insights
+          </a>
+          <a href="#" class="nav-link flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-gray-400">
+            <div class="flex items-center gap-3"><svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Plans</div>
+            <span class="text-[9px] bg-sky-500 text-white font-bold px-1.5 py-0.5 rounded-sm uppercase">Lite</span>
+          </a>
+        </div>
+      </div>
+    </nav>
   </aside>
 
-  <!-- ================= 3. FIRST CHANNEL: COMMAND CENTER ================= -->
-  <main class="flex-1 h-full overflow-y-auto relative z-10 p-6 md:p-10 lg:p-12">
-    <div class="max-w-6xl mx-auto space-y-8 animate-fade-in">
-      
-      <!-- A. ARCHITECTURAL LIVE CLOCK & COMMAND BAR -->
-      <div class="bg-xyrox-panel backdrop-blur-2xl border border-xyrox-border rounded-3xl p-6 md:p-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div class="space-y-2">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono uppercase tracking-widest text-gray-300">
-            <span>Channel 01 // Command Center</span>
-          </div>
-          <h2 class="text-3xl md:text-4xl font-semibold text-white tracking-tight" id="greetingText">Good morning.</h2>
-          <p class="text-sm text-gray-400" id="dateDisplay">LOADING DATE...</p>
-        </div>
-
-        <!-- Precision Digital Clock Card -->
-        <div class="w-full lg:w-auto flex items-center justify-between lg:justify-end gap-6 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 shadow-inner">
-          <div class="flex items-baseline gap-1.5 font-mono">
-            <span class="text-4xl md:text-6xl font-light text-white tracking-tighter" id="clockHM">00:00</span>
-            <span class="text-lg md:text-2xl font-normal text-gray-500 w-9" id="clockSec">00</span>
-            <span class="text-xs font-semibold text-gray-400 uppercase ml-1 hidden" id="clockAmPm">AM</span>
-          </div>
-          
-          <div class="flex flex-col gap-1.5 border-l border-white/10 pl-4">
-            <button id="btnFormatToggle" class="px-2.5 py-1 rounded-md text-[10px] font-mono uppercase tracking-wider bg-white/10 hover:bg-white/20 text-white transition border border-white/10">24H</button>
-            <button id="btnFullscreen" title="Toggle Fullscreen Desk Mode" class="px-2.5 py-1 rounded-md text-[10px] font-mono uppercase tracking-wider bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white transition border border-white/5">Desk</button>
-          </div>
+  <!-- ================= RIGHT CONTENT AREA ================= -->
+  <div class="flex-1 flex flex-col relative z-10 min-w-0">
+    
+    <!-- TOP HEADER -->
+    <header class="h-20 px-6 flex items-center justify-between shrink-0 border-b border-white/5 bg-black/10 backdrop-blur-md">
+      <div class="flex items-center gap-6 flex-1">
+        <h2 class="text-2xl font-semibold text-white tracking-tight flex items-center gap-3">
+          <svg class="w-6 h-6 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          Home
+        </h2>
+        <div class="hidden lg:flex items-center bg-black/40 border border-white/10 rounded-full px-4 py-2 w-72 transition focus-within:border-white/30">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" placeholder="Search or run a command" class="bg-transparent border-none text-sm text-white ml-2 focus:outline-none w-full placeholder:text-gray-500" />
         </div>
       </div>
 
-      <!-- B. MAIN WORKSPACE GRID -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- LEFT (6 Cols): UPGRADED DIRECT-INPUT FOCUS ENGINE -->
-        <div class="lg:col-span-6 bg-xyrox-panel backdrop-blur-2xl border border-xyrox-border p-7 md:p-8 rounded-3xl flex flex-col justify-between shadow-2xl">
-          
-          <!-- Engine Top Bar -->
-          <div class="flex items-center justify-between w-full">
-            <div>
-              <h3 class="text-base font-semibold text-white tracking-tight">Focus Engine</h3>
-              <p class="text-xs text-gray-500 mt-0.5">Click numbers to type any duration directly</p>
-            </div>
-            <!-- Mode Switcher (Timer vs Stopwatch) -->
-            <div class="flex bg-black/40 p-1 rounded-xl border border-white/10 text-xs font-mono">
-              <button id="modeTimerBtn" class="px-3 py-1 rounded-lg bg-white text-black font-medium transition">Timer</button>
-              <button id="modeStopwatchBtn" class="px-3 py-1 rounded-lg text-gray-400 hover:text-white transition">Stopwatch</button>
-            </div>
-          </div>
+      <div class="flex items-center gap-3 lg:gap-4 shrink-0">
+        <button class="btn-glow flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 rounded-xl text-sm font-semibold text-white border border-sky-400/30">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg> New task
+        </button>
 
-          <!-- Center Circular Progress Ring + Direct Time Input -->
-          <div class="relative flex items-center justify-center my-6">
-            <svg class="w-64 h-64" viewBox="0 0 220 220">
-              <circle cx="110" cy="110" r="98" stroke="rgba(255,255,255,0.06)" stroke-width="4" fill="transparent" />
-              <circle id="timerRing" class="progress-ring__circle" cx="110" cy="110" r="98" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="transparent" stroke-dasharray="615.75" stroke-dashoffset="0" />
-            </svg>
-
-            <!-- Direct Editable Time Inside Ring -->
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <div class="flex items-center justify-center">
-                <input type="number" id="focusMin" value="25" min="0" max="999" class="w-24 bg-transparent text-6xl font-mono font-light text-white text-center border-b border-transparent focus:border-white/40 focus:outline-none transition hover:bg-white/5 rounded-lg" />
-                <span class="text-5xl font-mono font-light text-gray-500 pb-2 mx-0.5">:</span>
-                <input type="number" id="focusSec" value="00" min="0" max="59" class="w-24 bg-transparent text-6xl font-mono font-light text-white text-center border-b border-transparent focus:border-white/40 focus:outline-none transition hover:bg-white/5 rounded-lg" />
-              </div>
-              <span id="timerStateLabel" class="text-[10px] font-mono uppercase tracking-[0.2em] text-gray-500 mt-2">Ready // Set Time</span>
-            </div>
-          </div>
-
-          <!-- Instant Preset Pills -->
-          <div id="presetRow" class="flex items-center justify-center gap-2 mb-6 flex-wrap">
-            <button data-min="15" class="preset-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 transition">15m</button>
-            <button data-min="25" class="preset-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-white/15 text-white border border-white/20 transition">25m</button>
-            <button data-min="45" class="preset-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 transition">45m</button>
-            <button data-min="60" class="preset-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 transition">60m</button>
-            <button data-min="90" class="preset-btn px-3 py-1.5 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 transition">90m</button>
-          </div>
-
-          <!-- Primary Action Controls -->
-          <div class="flex gap-3 w-full">
-            <button id="btnStartFocus" class="flex-1 py-3.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-200 transition shadow-lg">Start Session</button>
-            <button id="btnResetFocus" class="px-6 py-3.5 bg-white/5 border border-white/10 text-white text-sm font-medium rounded-xl hover:bg-white/15 transition">Reset</button>
-          </div>
+        <!-- AUTH SLOT (Google Profile Injects Here) -->
+        <div id="auth-slot" class="h-10 border border-white/10 rounded-full bg-white/5 flex items-center px-3 gap-2 cursor-pointer transition hover:bg-white/10">
+          <div class="w-5 h-5 rounded-full bg-white/20"></div>
+          <span class="text-xs text-gray-400">Loading Auth...</span>
         </div>
 
-        <!-- RIGHT (6 Cols): INTERACTIVE OBJECTIVES & MILESTONE TRACKER -->
-        <div class="lg:col-span-6 bg-xyrox-panel backdrop-blur-2xl border border-xyrox-border p-7 md:p-8 rounded-3xl flex flex-col justify-between shadow-2xl">
-          
-          <div>
-            <!-- Header & Completion Rate -->
-            <div class="flex justify-between items-start mb-5">
-              <div>
-                <h3 class="text-base font-semibold text-white tracking-tight">Command Objectives</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Live task & milestone execution tracker</p>
-              </div>
-              <div class="text-right">
-                <span class="text-2xl font-mono font-light text-white" id="objPercent">0%</span>
-                <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest" id="objCounter">0 / 0 Done</p>
-              </div>
-            </div>
-
-            <!-- Live Progress Bar -->
-            <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-6 border border-white/5">
-              <div id="objProgressBar" class="h-full bg-white transition-all duration-500 rounded-full" style="width: 0%"></div>
-            </div>
-
-            <!-- Add New Objective Input -->
-            <form id="addObjForm" class="flex gap-2 mb-5">
-              <input type="text" id="newObjInput" placeholder="Add a new objective or milestone..." autocomplete="off" class="flex-1 bg-black/40 border border-white/10 focus:border-white/30 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none transition" />
-              <button type="submit" class="px-5 py-3 bg-white text-black text-xs font-semibold uppercase tracking-wider rounded-xl hover:bg-gray-200 transition shrink-0">Add</button>
-            </form>
-
-            <!-- Objectives List -->
-            <div id="objList" class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
-              <!-- Populated dynamically via JS -->
-            </div>
-          </div>
-
-          <!-- Bottom Session Stats Bar -->
-          <div class="mt-6 pt-5 border-t border-white/10 flex items-center justify-between text-xs font-mono text-gray-400">
-            <span>Sessions Completed Today: <strong class="text-white" id="sessionsCount">0</strong></span>
-            <button id="btnClearCompleted" class="text-gray-500 hover:text-white transition">Clear Completed</button>
-          </div>
-
+        <div class="hidden sm:flex items-center bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 gap-2">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span id="topClock" class="text-sm font-mono text-gray-300">00:00:00</span>
         </div>
-
       </div>
-    </div>
-  </main>
+    </header>
 
-  <!-- ================= 4. SCRIPTS ================= -->
-  <script src="app.js"></script>
-  <script src="auth.js"></script>
+    <!-- MAIN SCROLLABLE CONTENT (SKELETON ONLY) -->
+    <main class="flex-1 scroll-area p-6 lg:p-8">
+      <div class="w-full h-full border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center p-8 bg-black/20">
+        <svg class="w-12 h-12 text-sky-500 mb-4 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        <h3 class="text-xl font-semibold text-white mb-2">Unified Skeleton Deployed</h3>
+        <p class="text-sm text-gray-400 max-w-md">Everything—HTML, CSS, layout, and Google Auth—is now safely locked inside this single file. No more scrolling bugs on iPad!</p>
+        <p class="text-xs text-sky-400 mt-4 font-mono">Let me know when this is live, and we will build the Home Grid!</p>
+      </div>
+    </main>
+  </div>
 
+  <!-- ================= INJECTED JAVASCRIPT (No need for app.js or auth.js) ================= -->
   <script>
-    // --- 1. MOBILE DRAWER LOGIC ---
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-    if (mobileMenuBtn) {
-      mobileMenuBtn.addEventListener('click', () => {
-        sidebar.classList.remove('-translate-x-full');
-        sidebarOverlay.classList.remove('hidden');
-      });
-    }
-    if (sidebarOverlay) {
-      sidebarOverlay.addEventListener('click', () => {
-        sidebar.classList.add('-translate-x-full');
-        sidebarOverlay.classList.add('hidden');
-      });
-    }
-
-    // --- 2. PRECISION LIVE CLOCK & DESK MODE ---
-    let use24Hour = true;
-    const clockHM = document.getElementById('clockHM');
-    const clockSec = document.getElementById('clockSec');
-    const clockAmPm = document.getElementById('clockAmPm');
-    const btnFormatToggle = document.getElementById('btnFormatToggle');
-    const btnFullscreen = document.getElementById('btnFullscreen');
-
-    function updateDashboardClock() {
-      const now = new Date();
-      let hours = now.getHours();
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
-
-      // Greeting
-      let greeting = 'Good evening.';
-      if (hours < 12) greeting = 'Good morning.';
-      else if (hours < 17) greeting = 'Good afternoon.';
-      document.getElementById('greetingText').textContent = greeting;
-
-      // Format 12H or 24H
-      if (!use24Hour) {
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
-        clockAmPm.textContent = ampm;
-        clockAmPm.classList.remove('hidden');
-      } else {
-        clockAmPm.classList.add('hidden');
+    /* 1. CLOCK & IPAD SCROLL ENGINE */
+    document.addEventListener('DOMContentLoaded', () => {
+      const clockEl = document.getElementById('topClock');
+      function updateClock() {
+          if (!clockEl) return;
+          clockEl.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
       }
+      setInterval(updateClock, 1000); updateClock();
 
-      clockHM.textContent = `${hours.toString().padStart(2, '0')}:${minutes}`;
-      clockSec.textContent = seconds;
-
-      document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric'
-      });
-    }
-
-    btnFormatToggle.addEventListener('click', () => {
-      use24Hour = !use24Hour;
-      btnFormatToggle.textContent = use24Hour ? '24H' : '12H';
-      updateDashboardClock();
+      // Prevent iPad bounce scrolling outside of main content
+      document.body.addEventListener('touchmove', function(e) {
+          if (!e.target.closest('.scroll-area')) e.preventDefault();
+      }, { passive: false });
     });
 
-    btnFullscreen.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    });
+    /* 2. REAL GOOGLE AUTH ENGINE */
+    const DEFAULT_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
+      authDomain: "xyrox6789-17138.firebaseapp.com",
+      projectId: "xyrox6789-17138"
+    };
 
-    setInterval(updateDashboardClock, 1000);
-    updateDashboardClock();
+    function initRealGoogleAuth() {
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
+        firebase.auth().onAuthStateChanged((user) => {
+          const authSlot = document.getElementById("auth-slot");
+          if (!authSlot) return;
 
-    // --- 3. UPGRADED FOCUS ENGINE (DIRECT INPUT + RING + STOPWATCH) ---
-    const minEl = document.getElementById('focusMin');
-    const secEl = document.getElementById('focusSec');
-    const btnStart = document.getElementById('btnStartFocus');
-    const btnReset = document.getElementById('btnResetFocus');
-    const timerRing = document.getElementById('timerRing');
-    const stateLabel = document.getElementById('timerStateLabel');
-    const modeTimerBtn = document.getElementById('modeTimerBtn');
-    const modeStopwatchBtn = document.getElementById('modeStopwatchBtn');
-    const presetRow = document.getElementById('presetRow');
-    const sessionsCountEl = document.getElementById('sessionsCount');
-
-    const RING_CIRCUMFERENCE = 615.75;
-    let timerInterval = null;
-    let isRunning = false;
-    let mode = 'timer'; // 'timer' or 'stopwatch'
-    let initialTotalSeconds = 25 * 60;
-    let currentSeconds = 25 * 60;
-
-    let completedSessions = parseInt(localStorage.getItem('xyrox_sessions_today') || '0', 10);
-    sessionsCountEl.textContent = completedSessions;
-
-    function setRingProgress(fraction) {
-      const clamped = Math.max(0, Math.min(1, fraction));
-      const offset = RING_CIRCUMFERENCE - clamped * RING_CIRCUMFERENCE;
-      timerRing.style.strokeDashoffset = offset;
-    }
-
-    function syncInputsFromSeconds(secTotal) {
-      const m = Math.floor(secTotal / 60);
-      const s = secTotal % 60;
-      minEl.value = m.toString().padStart(2, '0');
-      secEl.value = s.toString().padStart(2, '0');
-    }
-
-    function readCustomInputs() {
-      let m = parseInt(minEl.value, 10) || 0;
-      let s = parseInt(secEl.value, 10) || 0;
-      if (m < 0) m = 0;
-      if (m > 999) m = 999;
-      if (s < 0) s = 0;
-      if (s > 59) s = 59;
-      minEl.value = m.toString().padStart(2, '0');
-      secEl.value = s.toString().padStart(2, '0');
-      currentSeconds = m * 60 + s;
-      initialTotalSeconds = Math.max(1, currentSeconds);
-      setRingProgress(1);
-    }
-
-    minEl.addEventListener('change', readCustomInputs);
-    secEl.addEventListener('change', readCustomInputs);
-
-    // Preset Buttons
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (isRunning) stopEngine();
-        const mins = parseInt(btn.getAttribute('data-min'), 10);
-        minEl.value = mins.toString().padStart(2, '0');
-        secEl.value = '00';
-        readCustomInputs();
-        stateLabel.textContent = `Preset // ${mins} Min`;
-      });
-    });
-
-    // Mode Switching
-    modeTimerBtn.addEventListener('click', () => {
-      if (mode === 'timer') return;
-      stopEngine();
-      mode = 'timer';
-      modeTimerBtn.className = 'px-3 py-1 rounded-lg bg-white text-black font-medium transition';
-      modeStopwatchBtn.className = 'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition';
-      presetRow.classList.remove('opacity-30', 'pointer-events-none');
-      minEl.disabled = false;
-      secEl.disabled = false;
-      minEl.value = '25';
-      secEl.value = '00';
-      readCustomInputs();
-      stateLabel.textContent = 'Ready // Set Time';
-    });
-
-    modeStopwatchBtn.addEventListener('click', () => {
-      if (mode === 'stopwatch') return;
-      stopEngine();
-      mode = 'stopwatch';
-      modeStopwatchBtn.className = 'px-3 py-1 rounded-lg bg-white text-black font-medium transition';
-      modeTimerBtn.className = 'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition';
-      presetRow.classList.add('opacity-30', 'pointer-events-none');
-      minEl.disabled = true;
-      secEl.disabled = true;
-      currentSeconds = 0;
-      syncInputsFromSeconds(0);
-      setRingProgress(0);
-      stateLabel.textContent = 'Stopwatch // Count Up';
-    });
-
-    function stopEngine() {
-      clearInterval(timerInterval);
-      isRunning = false;
-      btnStart.textContent = 'Start Session';
-      btnStart.className = 'flex-1 py-3.5 bg-white text-black text-sm font-semibold rounded-xl hover:bg-gray-200 transition shadow-lg';
-      if (mode === 'timer') {
-        minEl.disabled = false;
-        secEl.disabled = false;
-      }
-    }
-
-    btnStart.addEventListener('click', () => {
-      if (isRunning) {
-        stopEngine();
-        stateLabel.textContent = 'Paused';
-        return;
-      }
-
-      if (mode === 'timer') {
-        readCustomInputs();
-        if (currentSeconds <= 0) return;
-      }
-
-      isRunning = true;
-      minEl.disabled = true;
-      secEl.disabled = true;
-      btnStart.textContent = 'Pause Session';
-      btnStart.className = 'flex-1 py-3.5 bg-white/10 text-white text-sm font-semibold rounded-xl hover:bg-white/20 border border-white/15 transition';
-      stateLabel.textContent = mode === 'timer' ? 'Focusing // Active' : 'Stopwatch // Running';
-
-      timerInterval = setInterval(() => {
-        if (mode === 'timer') {
-          currentSeconds--;
-          syncInputsFromSeconds(currentSeconds);
-          setRingProgress(currentSeconds / initialTotalSeconds);
-
-          if (currentSeconds <= 0) {
-            stopEngine();
-            completedSessions++;
-            localStorage.setItem('xyrox_sessions_today', completedSessions);
-            sessionsCountEl.textContent = completedSessions;
-            stateLabel.textContent = 'Session Complete!';
-            setRingProgress(1);
+          if (user) {
+            const realName = user.displayName || (user.email ? user.email.split("@")[0] : "Member");
+            const avatarHtml = user.photoURL
+              ? `<img src="${user.photoURL}" class="w-6 h-6 rounded-full object-cover border border-white/20" />`
+              : `<div class="w-6 h-6 rounded-full bg-sky-500 text-white font-bold text-[10px] flex items-center justify-center">${realName.charAt(0).toUpperCase()}</div>`;
+            
+            authSlot.innerHTML = `
+              <div class="flex items-center gap-2">
+                ${avatarHtml}
+                <span class="text-xs font-medium text-gray-200 truncate max-w-[100px]">@${realName.toLowerCase().replace(/\s+/g, '')}</span>
+              </div>
+            `;
+          } else {
+            authSlot.innerHTML = `
+              <button onclick="signInWithRealGoogle()" class="flex items-center gap-2 text-xs font-semibold text-white w-full h-full">
+                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign In
+              </button>
+            `;
           }
-        } else {
-          currentSeconds++;
-          syncInputsFromSeconds(currentSeconds);
-          setRingProgress((currentSeconds % 60) / 60);
-        }
-      }, 1000);
-    });
-
-    btnReset.addEventListener('click', () => {
-      stopEngine();
-      if (mode === 'timer') {
-        minEl.value = '25';
-        secEl.value = '00';
-        readCustomInputs();
-        stateLabel.textContent = 'Ready // Set Time';
-      } else {
-        currentSeconds = 0;
-        syncInputsFromSeconds(0);
-        setRingProgress(0);
-        stateLabel.textContent = 'Stopwatch // Reset';
-      }
-    });
-
-    // --- 4. INTERACTIVE OBJECTIVES TRACKER (SAVED IN LOCALSTORAGE) ---
-    const DEFAULT_OBJECTIVES = [
-      { id: 1, text: 'Complete XYROX 3D Command Architecture', done: true },
-      { id: 2, text: 'Connect Google Firebase Auth in Settings', done: false },
-      { id: 3, text: 'Test 15-Track NCS Audio Studio & Mixer', done: false }
-    ];
-
-    let objectives = JSON.parse(localStorage.getItem('xyrox_objectives')) || DEFAULT_OBJECTIVES;
-    const objList = document.getElementById('objList');
-    const objPercent = document.getElementById('objPercent');
-    const objCounter = document.getElementById('objCounter');
-    const objProgressBar = document.getElementById('objProgressBar');
-    const addObjForm = document.getElementById('addObjForm');
-    const newObjInput = document.getElementById('newObjInput');
-    const btnClearCompleted = document.getElementById('btnClearCompleted');
-
-    function saveAndRenderObjectives() {
-      localStorage.setItem('xyrox_objectives', JSON.stringify(objectives));
-      objList.innerHTML = '';
-
-      const total = objectives.length;
-      const doneCount = objectives.filter(o => o.done).length;
-      const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
-
-      objPercent.textContent = `${pct}%`;
-      objCounter.textContent = `${doneCount} / ${total} Done`;
-      objProgressBar.style.width = `${pct}%`;
-
-      if (total === 0) {
-        objList.innerHTML = `<p class="text-xs font-mono text-gray-500 py-6 text-center">No active objectives. Add a milestone above.</p>`;
-        return;
-      }
-
-      objectives.forEach(item => {
-        const row = document.createElement('div');
-        row.className = `flex items-center justify-between gap-3 p-3.5 rounded-xl border transition group ${
-          item.done
-            ? 'bg-white/[0.02] border-white/5 opacity-60'
-            : 'bg-black/30 border-white/10 hover:border-white/20'
-        }`;
-
-        row.innerHTML = `
-          <label class="flex items-center gap-3.5 flex-1 cursor-pointer">
-            <input type="checkbox" ${item.done ? 'checked' : ''} class="w-4 h-4 rounded border-gray-500 bg-transparent text-white focus:ring-0 cursor-pointer" />
-            <span class="text-sm ${item.done ? 'line-through text-gray-500' : 'text-gray-200'}">${item.text}</span>
-          </label>
-          <button class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition px-1" title="Remove">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
-        `;
-
-        // Toggle Check
-        row.querySelector('input').addEventListener('change', () => {
-          item.done = !item.done;
-          saveAndRenderObjectives();
         });
-
-        // Delete Button
-        row.querySelector('button').addEventListener('click', () => {
-          objectives = objectives.filter(o => o.id !== item.id);
-          saveAndRenderObjectives();
-        });
-
-        objList.appendChild(row);
-      });
+      } catch (err) { console.error("Firebase Auth Error:", err); }
     }
 
-    addObjForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const val = newObjInput.value.trim();
-      if (!val) return;
-      objectives.unshift({ id: Date.now(), text: val, done: false });
-      newObjInput.value = '';
-      saveAndRenderObjectives();
-    });
+    function signInWithRealGoogle() {
+      if (!firebase.apps.length) firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      auth.signInWithPopup(provider).catch((error) => console.error(error));
+    }
 
-    btnClearCompleted.addEventListener('click', () => {
-      objectives = objectives.filter(o => !o.done);
-      saveAndRenderObjectives();
-    });
-
-    saveAndRenderObjectives();
+    document.addEventListener("DOMContentLoaded", initRealGoogleAuth);
   </script>
 </body>
 </html>
