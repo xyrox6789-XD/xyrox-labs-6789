@@ -18,7 +18,7 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 // 2. PUT ONLY YOUR PERSONAL GMAIL HERE FOR THE [FOUNDER] BADGE
 const FOUNDER_EMAILS = [
-  "yourname@gmail.com"
+  "xyrox6789@gmail.com"
 ];
 
 let firebaseAuthInstance = null;
