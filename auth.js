@@ -1,22 +1,15 @@
 /* =========================================================
    XYROX-UTILITIES — REAL GOOGLE SIGN-IN ENGINE (auth.js)
-   STEP 1 FIX:
-   - Each person ONLY gets their own Google account name/avatar
-   - Never shares or hardcodes "Namit Gupta" for other users
-   - Hides raw Google UID completely
-   - Injects a Top-Right Sign-In / Profile button on every page
-     so you never have to scroll with 2 fingers to find Sign In!
+   Hardcoded with xyrox6789-17138 Firebase credentials
    ========================================================= */
 
-// 1. PASTE YOUR FIREBASE KEYS HERE IN GITHUB
 const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
   authDomain: "xyrox6789-17138.firebaseapp.com",
-  projectId: "xyrox6789-17138",
-  appId: "PASTE_YOUR_APP_ID_HERE_IF_YOU_HAVE_IT"
+  projectId: "xyrox6789-17138"
 };
 
-// 2. PUT ONLY YOUR PERSONAL GMAIL HERE FOR THE [FOUNDER] BADGE
+// Founder emails that receive the [FOUNDER] badge
 const FOUNDER_EMAILS = [
   "xyrox6789@gmail.com"
 ];
@@ -41,20 +34,12 @@ function ensureFirebaseSDKLoaded(callback) {
 }
 
 function getActiveFirebaseConfig() {
-  if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.apiKey !== "PASTE_YOUR_API_KEY_HERE") {
-    return DEFAULT_FIREBASE_CONFIG;
-  }
-  try {
-    const saved = localStorage.getItem("xyrox_firebase_config");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.apiKey && parsed.authDomain) return parsed;
-    }
-  } catch (e) {}
-  return null;
+  // Always use the clean hardcoded config so every phone/device works out of the box
+  localStorage.removeItem("xyrox_firebase_config");
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
-// Build a clean Top-Right Sign-In / Account Bar on every page automatically
+// Injects a 1-tap Sign-In / Profile pill at the top-right of every page
 function injectTopAuthQuickBar() {
   if (document.getElementById("xyroxTopAuthWidget")) return;
 
@@ -69,10 +54,6 @@ function initRealGoogleAuth() {
   updateGlobalAuthUI(null);
 
   const config = getActiveFirebaseConfig();
-  if (!config) {
-    console.warn("Firebase config not set in auth.js yet.");
-    return;
-  }
 
   ensureFirebaseSDKLoaded(() => {
     try {
@@ -81,16 +62,13 @@ function initRealGoogleAuth() {
       }
       firebaseAuthInstance = firebase.auth();
 
-      // Always read the LIVE authenticated user directly from Google Firebase
       firebaseAuthInstance.onAuthStateChanged((user) => {
         if (user) {
           const emailLower = (user.email || "").toLowerCase();
           const isFounder = FOUNDER_EMAILS.map(e => e.toLowerCase()).includes(emailLower);
 
-          // Per-user custom nickname keyed strictly by their own unique Google UID
+          // Per-user custom nickname strictly tied to their own unique Google UID
           const customName = localStorage.getItem(`xyrox_custom_name_${user.uid}`);
-
-          // Strictly use THIS user's own Google displayName or email prefix
           const realGoogleName = user.displayName || (user.email ? user.email.split("@")[0] : "Member");
 
           currentGoogleUser = {
@@ -115,13 +93,8 @@ function initRealGoogleAuth() {
   });
 }
 
-// Always force Google Account Picker so another user never auto-logs into your account
 function signInWithRealGoogle() {
   const config = getActiveFirebaseConfig();
-  if (!config) {
-    alert("Firebase API Keys are missing in auth.js! Make sure you pasted your keys in auth.js.");
-    return;
-  }
 
   ensureFirebaseSDKLoaded(() => {
     if (!firebase.apps.length) {
@@ -129,12 +102,16 @@ function signInWithRealGoogle() {
     }
     const auth = firebase.auth();
     const provider = new firebase.auth.GoogleAuthProvider();
-    // Forces Google to ask WHICH Google account to use every single time
     provider.setCustomParameters({ prompt: "select_account" });
 
     auth.signInWithPopup(provider).catch((error) => {
       if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
         auth.signInWithRedirect(provider);
+      } else if (error.code === "auth/unauthorized-domain") {
+        alert(
+          "Almost there! Open Firebase project 'Xyrox6789' (xyrox6789-17138) -> Authentication -> Settings -> Authorized domains -> Add domain, and paste exactly:\n\n" +
+          window.location.hostname
+        );
       } else {
         alert("Google Sign-In Error: " + error.message);
       }
@@ -162,7 +139,6 @@ function updateGlobalAuthUI(user) {
   const topWidget = document.getElementById("xyroxTopAuthWidget");
 
   if (user) {
-    // 1. Update Top-Right Quick Bar (Always visible without scrolling!)
     if (topWidget) {
       const avatarHtml = user.photoURL
         ? `<img src="${escapeHtml(user.photoURL)}" class="w-6 h-6 rounded-full object-cover border border-white/20" />`
@@ -177,7 +153,6 @@ function updateGlobalAuthUI(user) {
       `;
     }
 
-    // 2. Update Left Sidebar
     if (sidebarName) {
       sidebarName.innerHTML = user.isFounder
         ? `${escapeHtml(user.displayName)} <span class="px-1 py-0.5 rounded text-[8px] font-bold bg-white text-black uppercase ml-1">Founder</span>`
@@ -187,7 +162,6 @@ function updateGlobalAuthUI(user) {
       sidebarStatus.textContent = "Account Connected";
     }
 
-    // 3. Update Settings Page (if open)
     if (loggedOutView && loggedInView) {
       loggedOutView.classList.add("hidden");
       loggedInView.classList.remove("hidden");
@@ -219,7 +193,6 @@ function updateGlobalAuthUI(user) {
       }
     }
 
-    // 4. Unlock Global Chat Input
     const chatInput = document.getElementById("chatInputContainer");
     if (chatInput) {
       chatInput.classList.remove("opacity-50", "cursor-not-allowed");
@@ -232,7 +205,6 @@ function updateGlobalAuthUI(user) {
       if (btnField) btnField.disabled = false;
     }
   } else {
-    // Logged Out: Show 1-Tap Sign In Button at Top Right of EVERY page
     if (topWidget) {
       topWidget.innerHTML = `
         <button onclick="signInWithRealGoogle()" class="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white text-black hover:bg-gray-200 font-semibold text-xs shadow-lg transition">
