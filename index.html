@@ -1275,7 +1275,7 @@
       setTimeout(() => toast.classList.remove('show'), 2600);
     }
 
-    /* 11. REAL GOOGLE FIREBASE SIGN-IN ENGINE */
+    /* 11. DOMAIN DETECTIVE GOOGLE FIREBASE SIGN-IN ENGINE */
     const DEFAULT_FIREBASE_CONFIG = {
       apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
       authDomain: "xyrox6789-17138.firebaseapp.com",
@@ -1323,8 +1323,11 @@
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
+      
       auth.signInWithPopup(provider).catch((error) => {
-        alert("Sign In Blocked by Google: " + error.message);
+        // THE DOMAIN DETECTIVE
+        const actualDomain = window.location.hostname;
+        alert("Firebase is blocking this exact domain:\n\n👉 " + actualDomain + " 👈\n\nGo to Firebase Authorized Domains and add THAT EXACT TEXT to the list!\n\nError code: " + error.code);
       });
     }
 
