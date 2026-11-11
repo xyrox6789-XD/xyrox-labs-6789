@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>XYROX UTILITIES | Deep Work Focus</title>
+  
+  <!-- Tailwind CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Official Google Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ================= DYNAMIC LIGHT/DARK THEME ENGINE ================= */
+    :root {
+      --xy-bg: #f1f5f9;
+      --xy-text: #0f172a;
+      --xy-text-muted: #64748b;
+      --xy-panel: rgba(255, 255, 255, 0.86);
+      --xy-panel-solid: #ffffff;
+      --xy-card: rgba(255, 255, 255, 0.88);
+      --xy-border: rgba(15, 23, 42, 0.1);
+      --xy-accent: #4f46e5;
+      --xy-accent-2: #06b6d4;
+      --xy-grid-node: rgba(15, 23, 42, 0.16);
+    }
+    
+    .dark {
+      --xy-bg: #05070f;
+      --xy-text: #f8fafc;
+      --xy-text-muted: #94a3b8;
+      --xy-panel: rgba(10, 14, 28, 0.82);
+      --xy-panel-solid: #080b16;
+      --xy-card: rgba(12, 17, 34, 0.72);
+      --xy-border: rgba(148, 163, 184, 0.12);
+      --xy-accent: #6366f1;
+      --xy-accent-2: #38bdf8;
+      --xy-grid-node: rgba(148, 163, 184, 0.18);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html, body {
+      margin: 0; padding: 0; width: 100vw; height: 100dvh;
+      background-color: var(--xy-bg); color: var(--xy-text);
+      font-family: 'Inter', sans-serif; overflow: hidden;
+      transition: background-color 0.35s ease, color 0.35s ease;
+    }
+
+    /* --- KINETIC TOP BRAND BANNER & SHIMMER --- */
+    .xy-brand-pill {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(56, 189, 248, 0.1));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.35);
+    }
+    .xy-brand-pill::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -120%;
+      width: 65%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      transform: skewX(-25deg);
+      animation: laserSweep 4.5s ease-in-out infinite;
+    }
+    @keyframes laserSweep {
+      0%, 30% { left: -120%; }
+      65%, 100% { left: 160%; }
+    }
+
+    .brand-title-fx {
+      background: linear-gradient(90deg, #ffffff 0%, #38bdf8 35%, #a855f7 68%, #ffffff 100%);
+      background-size: 220% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: textShimmer 5s linear infinite;
+    }
+    html:not(.dark) .brand-title-fx {
+      background: linear-gradient(90deg, #0f172a 0%, #4f46e5 40%, #0284c7 75%, #0f172a 100%);
+      background-size: 220% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    @keyframes textShimmer {
+      to { background-position: 220% center; }
+    }
+
+    /* --- SHELL & INTERACTIVE GLASS CARDS --- */
+    .xy-sidebar {
+      background: var(--xy-panel-solid);
+      border-right: 1px solid var(--xy-border);
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .xy-header {
+      background: var(--xy-panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--xy-border);
+    }
+    .xy-card {
+      position: relative;
+      background: var(--xy-card);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--xy-border);
+      box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.42);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+    }
+    .xy-card:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 24px 60px -15px rgba(56, 189, 248, 0.14);
+    }
+
+    /* Animated Cyber Corner Brackets */
+    .xy-corners::before,
+    .xy-corners::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .xy-corners::before {
+      top: -1px; left: -1px;
+      border-top: 2px solid var(--xy-accent-2);
+      border-left: 2px solid var(--xy-accent-2);
+      border-top-left-radius: 18px;
+    }
+    .xy-corners::after {
+      bottom: -1px; right: -1px;
+      border-bottom: 2px solid var(--xy-accent);
+      border-right: 2px solid var(--xy-accent);
+      border-bottom-right-radius: 18px;
+    }
+    .xy-card:hover.xy-corners::before,
+    .xy-card:hover.xy-corners::after {
+      width: 24px;
+      height: 24px;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+    }
+
+    /* Entrance Stagger Animation */
+    @keyframes slideUpFade {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anim-in-1 { animation: slideUpFade 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-in-2 { animation: slideUpFade 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-in-3 { animation: slideUpFade 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    /* Scrollbar */
+    .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .scroll-area::-webkit-scrollbar { width: 5px; height: 5px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--xy-border); border-radius: 10px; }
+
+    /* Sidebar Links */
+    .nav-link {
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      color: var(--xy-text-muted);
+      border: 1px solid transparent;
+    }
+    .nav-link.active {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.22) 0%, rgba(56, 189, 248, 0.06) 100%);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: var(--xy-text);
+      box-shadow: inset 0 0 18px rgba(99, 102, 241, 0.14);
+      transform: translateX(3px);
+    }
+    .nav-link:hover:not(.active) {
+      background: var(--xy-border);
+      color: var(--xy-text);
+      transform: translateX(3px);
+    }
+
+    /* Primary Gradient Button */
+    .xy-btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      color: #ffffff;
+      box-shadow: 0 8px 25px -4px rgba(99, 102, 241, 0.55);
+      transition: all 0.2s ease;
+    }
+    .xy-btn-primary:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 12px 30px -4px rgba(56, 189, 248, 0.7);
+    }
+    .xy-btn-primary:active { transform: scale(0.96); }
+
+    /* Custom Precision Audio Sliders */
+    input[type=range].xy-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+      outline: none;
+    }
+    input[type=range].xy-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+      border: 2px solid #ffffff;
+      transition: transform 0.15s ease;
+    }
+    input[type=range].xy-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Timer Reactor Glow when Running */
+    .reactor-running {
+      filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.35));
+    }
+
+    /* Zen Fullscreen Desk Mode */
+    body.zen-mode #sidebar,
+    body.zen-mode header,
+    body.zen-mode #bentoAnalyticsSection,
+    body.zen-mode footer {
+      display: none !important;
+    }
+    body.zen-mode #focusMainGrid {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #6366f1, #06b6d4); color: #ffffff;
+      padding: 11px 24px; border-radius: 99px; font-size: 13px; font-weight: 700;
+      transition: bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1); z-index: 100;
+      box-shadow: 0 12px 35px rgba(56, 189, 248, 0.45);
+    }
+    #toast.show { bottom: 28px; }
+  </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden antialiased select-none">
+
+  <!-- CUSTOM ARCHITECTURAL BLUEPRINT & DATA-PULSE CANVAS -->
+  <canvas id="xyBlueprintCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- ================= LEFT SIDEBAR (ALL REQUESTED CHANNELS) ================= -->
+  <aside id="sidebar" class="xy-sidebar w-64 h-full flex flex-col z-40 fixed md:relative transform -translate-x-full md:translate-x-0 shadow-2xl shrink-0">
+    
+    <!-- Sidebar Brand Identity Header -->
+    <div class="h-16 flex items-center justify-between px-5 border-b border-[var(--xy-border)] shrink-0">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl xy-btn-primary flex items-center justify-center font-black text-sm tracking-tighter shadow-lg">
+          XY
+        </div>
+        <div>
+          <h1 class="font-black tracking-widest text-xs uppercase leading-none brand-title-fx">XYROX UTILITIES</h1>
+          <p class="text-[10px] text-[var(--xy-text-muted)] font-mono mt-1">OS v4.2 // ENGINE</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Full Channels Navigation -->
+    <nav class="flex-1 scroll-area p-3 space-y-5">
+      
+      <!-- 1. MAIN CHANNELS -->
+      <div>
+        <div class="px-3 text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)] mb-1.5 flex items-center gap-1.5">
+          <span>🚀</span> MAIN
+        </div>
+        <div class="space-y-1">
+          <a href="index.html" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">🏠</span>
+            <span>Home</span>
+          </a>
+          <a href="index.html#tasks" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">✅</span>
+              <span>Tasks</span>
+            </div>
+            <span id="sidebarTaskBadge" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">0</span>
+          </a>
+          <a href="focus.html" class="nav-link active flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">⏱️</span>
+              <span>Focus</span>
+            </div>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">LIVE</span>
+          </a>
+          <a href="index.html#calendar" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center">📅</span>
+            <span>Calendar</span>
+          </a>
+          <a href="index.html#ai" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">🪄</span>
+            <span>AI Assistant</span>
+          </a>
+          <a href="index.html#reviews" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-yellow-500/15 text-yellow-400 flex items-center justify-center">⭐</span>
+            <span>Reviews</span>
+          </a>
+          <a href="index.html#links" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-teal-500/15 text-teal-400 flex items-center justify-center">🔗</span>
+            <span>Links</span>
+          </a>
+          <a href="index.html#chat" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">💬</span>
+              <span>Chat</span>
+            </div>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 2. GROW CHANNELS -->
+      <div>
+        <div class="px-3 text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)] mb-1.5 flex items-center gap-1.5">
+          <span>🌱</span> GROW
+        </div>
+        <div class="space-y-1">
+          <a href="index.html#insights" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-fuchsia-500/15 text-fuchsia-400 flex items-center justify-center">📊</span>
+            <span>Insights</span>
+          </a>
+          <a href="index.html#leaderboard" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">🏆</span>
+            <span>Leaderboard</span>
+          </a>
+          <a href="index.html#bank" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-lg bg-pink-500/15 text-pink-400 flex items-center justify-center">🏦</span>
+              <span>Bank</span>
+            </div>
+            <span id="sidebarCoinsBadge" class="text-[10px] font-mono font-bold text-amber-400">120 XP</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 3. ACCOUNT & QUICK TOOLS -->
+      <div>
+        <div class="px-3 text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)] mb-1.5 flex items-center gap-1.5">
+          <span>👤</span> ACCOUNT &amp; TOOLS
+        </div>
+        <div class="space-y-1">
+          <a href="index.html#plans" class="nav-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-lg bg-orange-500/15 text-orange-400 flex items-center justify-center">⚡</span>
+              <span>Plans</span>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">CORE</span>
+          </a>
+          <a href="index.html#settings" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+            <span class="w-6 h-6 rounded-lg bg-slate-500/15 text-slate-300 flex items-center justify-center">⚙️</span>
+            <span>Settings</span>
+          </a>
+          <button onclick="openTaskModal()" class="w-full nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-left">
+            <span class="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center">➕</span>
+            <span>New Task</span>
+          </button>
+          <button onclick="openShortcutsModal()" class="w-full nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-left">
+            <span class="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-400 flex items-center justify-center">⌨️</span>
+            <span>Shortcuts</span>
+          </button>
+        </div>
+      </div>
+
+    </nav>
+  </aside>
+
+  <!-- Mobile & Tablet Backdrop Overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden transition-opacity md:hidden"></div>
+
+  <!-- ================= RIGHT MAIN OS AREA ================= -->
+  <div class="flex-1 flex flex-col relative z-10 min-w-0 h-full">
+    
+    <!-- TOP COMMAND BAR WITH FIXED KINETIC XYROX UTILITIES BRANDING -->
+    <header class="xy-header h-16 px-4 lg:px-6 flex items-center justify-between gap-3 shrink-0">
+      
+      <!-- Left: 3-Line Sidebar Toggle + Fixed XYROX UTILITIES Kinetic Branding + Active Channel -->
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <button id="menuBtn" class="p-2 rounded-xl bg-[var(--xy-border)] hover:border-cyan-400/40 border border-transparent transition text-[var(--xy-text)] shrink-0" title="Toggle Channels">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <!-- Fixed Top XYROX UTILITIES Animated Branding Badge -->
+        <a href="index.html" class="xy-brand-pill px-3 py-1.5 rounded-xl flex items-center gap-2 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="text-xs sm:text-sm font-black tracking-wider uppercase brand-title-fx">XYROX UTILITIES</span>
+        </a>
+
+        <span class="text-[var(--xy-text-muted)] hidden sm:inline">/</span>
+
+        <!-- Active Channel Indicator -->
+        <div class="hidden sm:flex items-center gap-1.5 truncate">
+          <span class="text-sm">🎯</span>
+          <h2 id="topChannelTitle" class="text-xs sm:text-sm font-bold tracking-tight text-[var(--xy-text)] truncate">Deep Work Focus</h2>
+        </div>
+
+        <!-- Command Search Bar -->
+        <button onclick="openShortcutsModal()" class="hidden xl:flex items-center justify-between w-60 px-3.5 py-1.5 rounded-full bg-[var(--xy-border)] hover:border-indigo-500/40 border border-transparent text-xs text-[var(--xy-text-muted)] transition ml-2">
+          <span class="flex items-center gap-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Search or command
+          </span>
+          <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-black/30 text-slate-300 border border-white/10">Ctrl K</kbd>
+        </button>
+      </div>
+
+      <!-- Right: + New Task, User Auth, Theme Switch, Live Clock, Synced Pill -->
+      <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        
+        <button onclick="openTaskModal()" class="xy-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold tracking-wide">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          <span class="hidden sm:inline">New task</span>
+        </button>
+
+        <!-- Google Sign-In / Profile Slot -->
+        <div id="auth-slot" class="h-9 rounded-xl bg-[var(--xy-border)] border border-[var(--xy-border)] flex items-center px-3 gap-2 transition hover:border-indigo-500/40">
+          <span class="text-xs text-[var(--xy-text-muted)]">Loading...</span>
+        </div>
+
+        <!-- Theme Toggle Pill (Light / Dark) -->
+        <button id="themeToggleBtn" class="h-9 px-3 rounded-xl bg-[var(--xy-border)] hover:opacity-85 transition flex items-center gap-1.5 text-xs font-semibold text-[var(--xy-text)]" title="Switch Light/Dark Theme">
+          <span id="themeIcon">☀️</span>
+          <span id="themeLabel" class="hidden sm:inline">Light</span>
+        </button>
+
+        <!-- Live Clock Pill -->
+        <div class="hidden lg:flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[var(--xy-border)] font-mono text-xs font-medium text-[var(--xy-text)]">
+          <span class="text-cyan-400">🕒</span>
+          <span id="topClock">00:00:00 AM</span>
+        </div>
+
+        <!-- Synced Status Pill -->
+        <div class="hidden md:flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono font-semibold tracking-wider uppercase">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>SYNCED</span>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ================= MAIN SCROLLABLE DEEP WORK FOCUS ROOM ================= -->
+    <main class="flex-1 scroll-area p-4 sm:p-6 lg:p-8 space-y-6">
+
+      <!-- Exit Zen Mode Floating Pill (Only visible when Zen Desk Mode is active) -->
+      <div id="zenExitBar" class="hidden justify-between items-center px-5 py-3 rounded-2xl xy-card border border-cyan-400/40 mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="text-xs font-mono font-bold uppercase tracking-widest brand-title-fx">XYROX UTILITIES // ZEN DESK MODE</span>
+        </div>
+        <button onclick="toggleZenMode()" class="px-3.5 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold hover:bg-rose-500/30 transition">
+          Exit Fullscreen (Z)
+        </button>
+      </div>
+
+      <!-- 1. CORE FOCUS REACTOR + 6-CHANNEL PROCEDURAL SOUNDSCAPE MIXER -->
+      <section id="focusMainGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6 anim-in-1">
+        
+        <!-- LEFT (7 COLS): GIANT POMODORO & FLOW REACTOR -->
+        <div class="lg:col-span-7 xy-card xy-corners rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6">
+          
+          <!-- Top Mode Switcher Pills + Zen Mode Button -->
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-1.5 bg-black/25 p-1.5 rounded-2xl border border-[var(--xy-border)]">
+              <button onclick="setFocusMode('pomodoro', 25, this)" class="mode-pill active px-3 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-500 text-white shadow">
+                🎯 25m Deep
+              </button>
+              <button onclick="setFocusMode('hyper', 50, this)" class="mode-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--xy-text-muted)] hover:text-[var(--xy-text)] transition">
+                ⚡ 50m Hyper
+              </button>
+              <button onclick="setFocusMode('short', 5, this)" class="mode-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--xy-text-muted)] hover:text-[var(--xy-text)] transition">
+                ☕ 5m Break
+              </button>
+              <button onclick="setFocusMode('long', 15, this)" class="mode-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--xy-text-muted)] hover:text-[var(--xy-text)] transition">
+                🌙 15m Reset
+              </button>
+              <button onclick="setFocusMode('flow', 0, this)" class="mode-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--xy-text-muted)] hover:text-[var(--xy-text)] transition">
+                ♾️ Flow Stopwatch
+              </button>
+            </div>
+
+            <button onclick="toggleZenMode()" class="px-3.5 py-2 rounded-xl bg-[var(--xy-border)] hover:border-cyan-400/50 border border-transparent text-xs font-semibold flex items-center gap-1.5 transition" title="Distraction-Free Fullscreen Desk Mode">
+              <span>🖥️</span>
+              <span class="hidden sm:inline">Zen Mode</span>
+            </button>
+          </div>
+
+          <!-- Center Giant Radial Neon Timer Reactor -->
+          <div class="flex flex-col items-center justify-center py-2">
+            <div id="reactorContainer" class="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center transition-all duration-500">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 220 220">
+                <!-- Outer Precision Tick Ring -->
+                <circle cx="110" cy="110" r="100" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="2 5.2" class="text-slate-500/30" />
+                <!-- Background Track -->
+                <circle cx="110" cy="110" r="86" fill="none" stroke="currentColor" stroke-width="8" class="text-indigo-500/10" />
+                <!-- Active Glowing Neon Progress Ring -->
+                <circle id="reactorArc" cx="110" cy="110" r="86" fill="none" stroke="url(#focusReactorGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="540.35" stroke-dashoffset="0" class="transition-all duration-500" />
+                <defs>
+                  <linearGradient id="focusReactorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#38bdf8" />
+                    <stop offset="50%" stop-color="#6366f1" />
+                    <stop offset="100%" stop-color="#a855f7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              <!-- Digital Readout Inside Ring -->
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-300 mb-2">
+                  <span id="reactorDot" class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span id="reactorStateLabel">READY TO LOCK IN</span>
+                </div>
+
+                <div id="mainTimerReadout" class="text-5xl sm:text-6xl font-extrabold font-mono tracking-tight">
+                  25:00
+                </div>
+
+                <p id="rewardHintText" class="text-[11px] font-mono text-[var(--xy-text-muted)] mt-2">
+                  Complete session for <span class="text-amber-400 font-bold">+50 XP</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Objective Selector & Primary Controls -->
+          <div class="space-y-4 pt-2 border-t border-[var(--xy-border)]">
+            
+            <!-- Locked Task Target Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-black/25 p-3 rounded-2xl border border-[var(--xy-border)]">
+              <div class="flex items-center gap-2 text-xs font-semibold text-[var(--xy-text-muted)] shrink-0">
+                <span>🎯</span>
+                <span>Locked Objective:</span>
+              </div>
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <select id="lockedTaskSelect" class="flex-1 bg-transparent text-xs font-bold text-[var(--xy-text)] focus:outline-none truncate">
+                  <option value="Deep Work Session">⚡ General Deep Work Session</option>
+                </select>
+                <button onclick="openTaskModal()" class="text-[11px] font-mono text-cyan-400 hover:underline shrink-0">+ New</button>
+              </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <button id="mainStartBtn" onclick="toggleFocusEngine()" class="xy-btn-primary px-7 py-3 rounded-2xl text-xs sm:text-sm font-extrabold tracking-wide flex items-center gap-2">
+                  <span id="mainStartIcon">▶</span>
+                  <span id="mainStartLabel">START FOCUS SPRINT</span>
+                </button>
+
+                <button onclick="resetFocusEngine()" class="px-4 py-3 rounded-2xl bg-[var(--xy-border)] hover:bg-rose-500/20 hover:text-rose-300 border border-transparent text-xs font-bold transition">
+                  ↺ Reset
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button onclick="adjustMinutes(-5)" class="px-3 py-2.5 rounded-xl bg-[var(--xy-border)] hover:border-cyan-400/40 border border-transparent text-xs font-mono font-bold transition" title="Subtract 5 minutes">-5m</button>
+                <button onclick="adjustMinutes(5)" class="px-3 py-2.5 rounded-xl bg-[var(--xy-border)] hover:border-cyan-400/40 border border-transparent text-xs font-mono font-bold transition" title="Add 5 minutes">+5m</button>
+                <button onclick="completeSprintEarly()" class="px-3.5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition" title="Log current session">
+                  ✓ Log Session
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- RIGHT (5 COLS): 6-CHANNEL PROCEDURAL SOUNDSCAPE STUDIO -->
+        <div class="lg:col-span-5 xy-card xy-corners rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-5">
+          
+          <!-- Studio Header & Live Waveform Canvas -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-cyan-400">
+                  <span>●</span> WEB AUDIO SYNTH ENGINE
+                </div>
+                <h3 class="text-lg font-extrabold tracking-tight">Ambient Soundscape Mixer</h3>
+              </div>
+              <button id="masterAudioBtn" onclick="silenceAllChannels()" class="px-3 py-1.5 rounded-xl bg-[var(--xy-border)] hover:bg-rose-500/20 hover:text-rose-300 text-[11px] font-mono font-bold transition">
+                🔇 Mute All
+              </button>
+            </div>
+
+            <!-- Live Procedural Audio Spectrum Visualizer -->
+            <div class="h-14 w-full rounded-2xl bg-black/40 border border-[var(--xy-border)] overflow-hidden relative flex items-center justify-center">
+              <canvas id="audioVisualizerCanvas" class="w-full h-full"></canvas>
+              <span id="visualizerIdleTag" class="absolute text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)]">
+                Drag any slider below to synthesize live audio
+              </span>
+            </div>
+
+            <!-- 1-Tap Sound Mix Presets -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              <button onclick="applyMixPreset('code')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-[11px] font-semibold text-indigo-300 transition">
+                💻 Code Lock-In
+              </button>
+              <button onclick="applyMixPreset('rainy')" class="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-[11px] font-semibold text-cyan-300 transition">
+                🌧️ Midnight Study
+              </button>
+              <button onclick="applyMixPreset('neural')" class="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-[11px] font-semibold text-purple-300 transition">
+                🧠 40Hz Gamma Sync
+              </button>
+            </div>
+          </div>
+
+          <!-- 6 Layerable Procedural Frequency Sliders -->
+          <div class="space-y-3.5 py-1">
+            
+            <!-- Channel 1: Deep Brown Noise -->
+            <div class="p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold flex items-center gap-2">🌊 Deep Brown Noise <span class="text-[10px] font-mono text-[var(--xy-text-muted)]">Warmth</span></span>
+                <span id="val-brown" class="font-mono text-[11px] text-cyan-400 font-bold">0%</span>
+              </div>
+              <input type="range" min="0" max="100" value="0" class="xy-slider" id="slider-brown" oninput="updateChannelVolume('brown', this.value)" />
+            </div>
+
+            <!-- Channel 2: Tokyo Night Rain -->
+            <div class="p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold flex items-center gap-2">🌧️ Tokyo Night Rain <span class="text-[10px] font-mono text-[var(--xy-text-muted)]">Lo-Fi Patter</span></span>
+                <span id="val-rain" class="font-mono text-[11px] text-cyan-400 font-bold">0%</span>
+              </div>
+              <input type="range" min="0" max="100" value="0" class="xy-slider" id="slider-rain" oninput="updateChannelVolume('rain', this.value)" />
+            </div>
+
+            <!-- Channel 3: 40Hz Neural Gamma Binaural -->
+            <div class="p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold flex items-center gap-2">⚡ 40Hz Neural Gamma <span class="text-[10px] font-mono text-[var(--xy-text-muted)]">Cognition</span></span>
+                <span id="val-gamma" class="font-mono text-[11px] text-cyan-400 font-bold">0%</span>
+              </div>
+              <input type="range" min="0" max="100" value="0" class="xy-slider" id="slider-gamma" oninput="updateChannelVolume('gamma', this.value)" />
+            </div>
+
+            <!-- Channel 4: Deep Space Drone -->
+            <div class="p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold flex items-center gap-2">🛸 Deep Space Pad <span class="text-[10px] font-mono text-[var(--xy-text-muted)]">Sub-Harmonic</span></span>
+                <span id="val-drone" class="font-mono text-[11px] text-cyan-400 font-bold">0%</span>
+              </div>
+              <input type="range" min="0" max="100" value="0" class="xy-slider" id="slider-drone" oninput="updateChannelVolume('drone', this.value)" />
+            </div>
+
+            <!-- Channel 5: Cozy Fireplace -->
+            <div class="p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold flex items-center gap-2">🔥 Cozy Ember Crackle <span class="text-[10px] font-mono text-[var(--xy-text-muted)]">Cabin</span></span>
+                <span id="val-fire" class="font-mono text-[11px] text-cyan-400 font-bold">0%</span>
+              </div>
+              <input type="range" min="0" max="100" value="0" class="xy-slider" id="slider-fire" oninput="updateChannelVolume('fire', this.value)" />
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- 2. FOCUS TELEMETRY & COMPLETED SESSION HISTORY BENTO ROW -->
+      <section id="bentoAnalyticsSection" class="grid grid-cols-1 lg:grid-cols-12 gap-6 anim-in-2">
+        
+        <!-- Telemetry Stat Cards (5 Cols) -->
+        <div class="lg:col-span-5 grid grid-cols-2 gap-4">
+          <div class="xy-card rounded-3xl p-5 flex flex-col justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)]">SESSIONS COMPLETED</span>
+            <div class="mt-3 flex items-baseline justify-between">
+              <span id="statSessionsCount" class="text-3xl font-extrabold font-mono text-cyan-400">0</span>
+              <span class="text-xs font-mono text-emerald-400">🎯 Sprints</span>
+            </div>
+          </div>
+
+          <div class="xy-card rounded-3xl p-5 flex flex-col justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)]">DEEP WORK MINUTES</span>
+            <div class="mt-3 flex items-baseline justify-between">
+              <span id="statMinutesCount" class="text-3xl font-extrabold font-mono text-indigo-400">0m</span>
+              <span class="text-xs font-mono text-indigo-300">⚡ Logged</span>
+            </div>
+          </div>
+
+          <div class="xy-card rounded-3xl p-5 flex flex-col justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)]">TOTAL BANK XP</span>
+            <div class="mt-3 flex items-baseline justify-between">
+              <span id="statTotalXP" class="text-3xl font-extrabold font-mono text-amber-400">120</span>
+              <span class="text-xs font-mono text-amber-300">+50 / Sprint</span>
+            </div>
+          </div>
+
+          <div class="xy-card rounded-3xl p-5 flex flex-col justify-between">
+            <span class="text-[10px] font-mono uppercase tracking-widest text-[var(--xy-text-muted)]">NEURAL STATUS</span>
+            <div class="mt-3 flex items-baseline justify-between">
+              <span id="statRankName" class="text-lg font-extrabold tracking-tight brand-title-fx">OPERATOR</span>
+              <span class="text-xs font-mono text-cyan-300">🔥 Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session History Log (7 Cols) -->
+        <div class="lg:col-span-7 xy-card rounded-3xl p-6 flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-bold flex items-center gap-2">📜 Deep Work Session Log</h4>
+              <p class="text-[11px] text-[var(--xy-text-muted)]">Every completed focus sprint is recorded and synced with your XP Bank</p>
+            </div>
+            <button onclick="clearFocusHistory()" class="text-[11px] font-mono text-[var(--xy-text-muted)] hover:text-rose-400 transition">
+              Clear Log
+            </button>
+          </div>
+
+          <div id="sessionLogList" class="space-y-2 max-h-44 scroll-area pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 3. OFFICIAL XYROX UTILITIES COPYRIGHT & PROTECTION FOOTER -->
+      <footer class="pt-4 pb-8 border-t border-[var(--xy-border)] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left anim-in-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 rounded-lg xy-btn-primary flex items-center justify-center font-black text-[10px]">XY</div>
+          <p class="text-xs font-semibold tracking-wide">
+            Crafted &amp; Engineered by <span class="brand-title-fx font-extrabold">XYROX UTILITIES</span>
+          </p>
+        </div>
+        <p class="text-[11px] font-mono text-[var(--xy-text-muted)]">
+          © 2026 XYROX UTILITIES (@xyrox6789). All Rights Reserved. Unauthorized copying or reproduction is strictly prohibited.
+        </p>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL 1: + NEW TASK CREATOR ================= -->
+  <div id="taskModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="xy-card rounded-3xl max-w-md w-full p-6 space-y-4 border border-indigo-500/30">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold flex items-center gap-2">➕ Add New Objective</h3>
+        <button onclick="closeTaskModal()" class="text-xs text-[var(--xy-text-muted)] hover:text-white">✕ ESC</button>
+      </div>
+      <div class="space-y-3">
+        <input id="newTaskInput" type="text" placeholder="What objective are we locking onto?" class="w-full px-4 py-3 rounded-xl bg-black/30 border border-[var(--xy-border)] text-sm focus:outline-none focus:border-indigo-500" />
+        <div class="flex justify-end gap-2">
+          <button onclick="saveNewTask()" class="xy-btn-primary px-5 py-2.5 rounded-xl text-xs font-bold">Add &amp; Lock Objective</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 2: SHORTCUTS & COMMANDS ================= -->
+  <div id="shortcutsModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="xy-card rounded-3xl max-w-md w-full p-6 space-y-4 border border-cyan-500/30">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold flex items-center gap-2">⌨️ XYROX Focus Shortcuts</h3>
+        <button onclick="closeShortcutsModal()" class="text-xs text-[var(--xy-text-muted)] hover:text-white">✕ ESC</button>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between p-2.5 rounded-xl bg-white/5"><span>Start / Pause Focus Timer</span><kbd class="px-2 py-0.5 rounded bg-black/50 font-mono">SPACE / F</kbd></div>
+        <div class="flex justify-between p-2.5 rounded-xl bg-white/5"><span>Toggle Zen Fullscreen Mode</span><kbd class="px-2 py-0.5 rounded bg-black/50 font-mono">Z</kbd></div>
+        <div class="flex justify-between p-2.5 rounded-xl bg-white/5"><span>Create a New Objective</span><kbd class="px-2 py-0.5 rounded bg-black/50 font-mono">N</kbd></div>
+        <div class="flex justify-between p-2.5 rounded-xl bg-white/5"><span>Toggle Channels Sidebar</span><kbd class="px-2 py-0.5 rounded bg-black/50 font-mono">M</kbd></div>
+        <div class="flex justify-between p-2.5 rounded-xl bg-white/5"><span>Switch Light / Dark Theme</span><kbd class="px-2 py-0.5 rounded bg-black/50 font-mono">T</kbd></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">Notification</div>
+
+  <!-- ================= JAVASCRIPT ENGINE ================= -->
+  <script>
+    /* 0. ARCHITECTURAL PRECISION BLUEPRINT & DATA-PULSE CANVAS */
+    (function initBlueprintBackground() {
+      const canvas = document.getElementById('xyBlueprintCanvas');
+      const ctx = canvas.getContext('2d');
+      let w, h;
+      const gridSize = 48;
+      let pulses = [];
+      let pointer = { x: -500, y: -500 };
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('pointermove', (e) => {
+        pointer.x = e.clientX;
+        pointer.y = e.clientY;
+      });
+
+      function spawnPulse() {
+        if (pulses.length > 14) return;
+        const horizontal = Math.random() > 0.5;
+        const col = Math.floor(Math.random() * (w / gridSize)) * gridSize;
+        const row = Math.floor(Math.random() * (h / gridSize)) * gridSize;
+        pulses.push({
+          x: horizontal ? 0 : col,
+          y: horizontal ? row : 0,
+          vx: horizontal ? (2.2 + Math.random() * 2) : 0,
+          vy: horizontal ? 0 : (2.2 + Math.random() * 2),
+          len: 55 + Math.random() * 45,
+          color: Math.random() > 0.5 ? '#38bdf8' : '#6366f1'
+        });
+      }
+      setInterval(spawnPulse, 420);
+
+      function render() {
+        ctx.clearRect(0, 0, w, h);
+        const isDark = document.documentElement.classList.contains('dark');
+        const lineAlpha = isDark ? 0.05 : 0.04;
+        const crossAlpha = isDark ? 0.18 : 0.14;
+
+        ctx.strokeStyle = isDark ? `rgba(148, 163, 184, ${lineAlpha})` : `rgba(15, 23, 42, ${lineAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += gridSize) {
+          ctx.moveTo(x, 0); ctx.lineTo(x, h);
+        }
+        for (let y = 0; y < h; y += gridSize) {
+          ctx.moveTo(0, y); ctx.lineTo(w, y);
+        }
+        ctx.stroke();
+
+        for (let x = gridSize; x < w; x += gridSize * 2) {
+          for (let y = gridSize; y < h; y += gridSize * 2) {
+            const dx = x - pointer.x;
+            const dy = y - pointer.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const boost = dist < 160 ? (1 - dist / 160) * 0.55 : 0;
+
+            ctx.strokeStyle = isDark
+              ? `rgba(56, 189, 248, ${crossAlpha + boost})`
+              : `rgba(79, 70, 229, ${crossAlpha + boost})`;
+            ctx.beginPath();
+            ctx.moveTo(x - 3.5, y); ctx.lineTo(x + 3.5, y);
+            ctx.moveTo(x, y - 3.5); ctx.lineTo(x, y + 3.5);
+            ctx.stroke();
+          }
+        }
+
+        for (let i = pulses.length - 1; i >= 0; i--) {
+          const p = pulses[i];
+          p.x += p.vx;
+          p.y += p.vy;
+
+          const grad = ctx.createLinearGradient(
+            p.x, p.y,
+            p.x - (p.vx ? p.len : 0),
+            p.y - (p.vy ? p.len : 0)
+          );
+          grad.addColorStop(0, p.color);
+          grad.addColorStop(1, 'transparent');
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - (p.vx ? p.len : 0), p.y - (p.vy ? p.len : 0));
+          ctx.stroke();
+
+          if (p.x - p.len > w || p.y - p.len > h) {
+            pulses.splice(i, 1);
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+      render();
+    })();
+
+    /* 1. SIDEBAR, CLOCK & THEME ENGINE */
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    let isSidebarOpen = window.innerWidth >= 768;
+
+    function toggleSidebar() {
+      isSidebarOpen = !isSidebarOpen;
+      if (isSidebarOpen) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('md:flex');
+        if (window.innerWidth < 768) overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+    menuBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+
+    function updateClock() {
+      const now = new Date();
+      const clockEl = document.getElementById('topClock');
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    themeToggleBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      const isDark = html.classList.contains('dark');
+      document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('themeLabel').textContent = isDark ? 'Light' : 'Dark';
+    });
+
+    /* 2. SHARED XP & TASKS SYNC WITH HOME DASHBOARD */
+    let tasks = JSON.parse(localStorage.getItem('xyrox_home_tasks') || '[]');
+    let userXP = parseInt(localStorage.getItem('xyrox_user_xp') || '120', 10);
+    let focusLogs = JSON.parse(localStorage.getItem('xyrox_focus_logs') || '[]');
+
+    function syncSharedState() {
+      const pending = tasks.filter(t => !t.completed);
+      document.getElementById('sidebarTaskBadge').textContent = pending.length;
+      document.getElementById('sidebarCoinsBadge').textContent = `${userXP} XP`;
+      document.getElementById('statTotalXP').textContent = userXP;
+
+      // Populate Locked Task Select
+      const select = document.getElementById('lockedTaskSelect');
+      const currentVal = select.value;
+      select.innerHTML = `<option value="Deep Work Sprint">⚡ General Deep Work Sprint</option>` +
+        pending.map(t => `<option value="${t.title.replace(/"/g, '&quot;')}">🎯 ${t.title}</option>`).join('');
+      if (currentVal) select.value = currentVal;
+
+      // Update Telemetry
+      const totalMins = focusLogs.reduce((acc, item) => acc + (item.minutes || 0), 0);
+      document.getElementById('statSessionsCount').textContent = focusLogs.length;
+      document.getElementById('statMinutesCount').textContent = `${totalMins}m`;
+
+      const logContainer = document.getElementById('sessionLogList');
+      if (focusLogs.length === 0) {
+        logContainer.innerHTML = `<p class="text-xs text-[var(--xy-text-muted)] py-4 text-center font-mono">No focus sprints logged yet. Lock onto an objective and hit Start!</p>`;
+      } else {
+        logContainer.innerHTML = focusLogs.slice(0, 8).map(item => `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-black/25 border border-[var(--xy-border)] text-xs">
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="px-2 py-0.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono text-[10px] font-bold">${item.minutes}m</span>
+              <span class="font-semibold truncate">${item.task}</span>
+            </div>
+            <div class="flex items-center gap-3 shrink-0 font-mono text-[11px]">
+              <span class="text-amber-400 font-bold">+${item.xp} XP</span>
+              <span class="text-[var(--xy-text-muted)]">${item.time}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+    syncSharedState();
+
+    function addXP(amount) {
+      userXP += amount;
+      localStorage.setItem('xyrox_user_xp', userXP);
+      syncSharedState();
+    }
+
+    function openTaskModal() {
+      document.getElementById('taskModal').classList.remove('hidden');
+      document.getElementById('taskModal').classList.add('flex');
+      setTimeout(() => document.getElementById('newTaskInput').focus(), 50);
+    }
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+      document.getElementById('taskModal').classList.remove('flex');
+    }
+    function saveNewTask() {
+      const input = document.getElementById('newTaskInput');
+      const title = input.value.trim();
+      if (!title) return;
+      tasks.unshift({ id: Date.now(), title, completed: false });
+      localStorage.setItem('xyrox_home_tasks', JSON.stringify(tasks));
+      input.value = '';
+      closeTaskModal();
+      syncSharedState();
+      document.getElementById('lockedTaskSelect').value = title;
+      showToast('🎯 Objective added & locked!');
+    }
+
+    /* 3. DEEP WORK POMODORO & FLOW STOPWATCH REACTOR */
+    const FULL_ARC = 540.35;
+    let currentMode = 'pomodoro';
+    let targetMinutes = 25;
+    let totalSeconds = 25 * 60;
+    let remainingSeconds = 25 * 60;
+    let elapsedFlowSeconds = 0;
+    let timerRunning = false;
+    let timerInterval = null;
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateReactorDisplay() {
+      const readout = document.getElementById('mainTimerReadout');
+      const arc = document.getElementById('reactorArc');
+
+      if (currentMode === 'flow') {
+        readout.textContent = formatTime(elapsedFlowSeconds);
+        const loopPct = (elapsedFlowSeconds % 3600) / 3600;
+        arc.style.strokeDashoffset = FULL_ARC * (1 - loopPct);
+      } else {
+        readout.textContent = formatTime(remainingSeconds);
+        const pct = totalSeconds > 0 ? (remainingSeconds / totalSeconds) : 0;
+        arc.style.strokeDashoffset = FULL_ARC * (1 - pct);
+      }
+    }
+
+    function setFocusMode(mode, mins, btnEl) {
+      if (timerRunning) toggleFocusEngine();
+      currentMode = mode;
+      targetMinutes = mins;
+      totalSeconds = mins * 60;
+      remainingSeconds = totalSeconds;
+      elapsedFlowSeconds = 0;
+
+      document.querySelectorAll('.mode-pill').forEach(b => {
+        b.classList.remove('active', 'bg-indigo-500', 'text-white', 'shadow');
+        b.classList.add('text-[var(--xy-text-muted)]');
+      });
+      if (btnEl) {
+        btnEl.classList.add('active', 'bg-indigo-500', 'text-white', 'shadow');
+        btnEl.classList.remove('text-[var(--xy-text-muted)]');
+      }
+
+      document.getElementById('reactorStateLabel').textContent =
+        mode === 'flow' ? 'FLOW STOPWATCH READY' : `${mins}M SESSION READY`;
+      updateReactorDisplay();
+    }
+
+    function adjustMinutes(delta) {
+      if (currentMode === 'flow') {
+        showToast('♾️ Flow mode counts up automatically');
+        return;
+      }
+      const newMins = Math.max(5, Math.min(180, Math.round(remainingSeconds / 60) + delta));
+      targetMinutes = newMins;
+      totalSeconds = newMins * 60;
+      remainingSeconds = totalSeconds;
+      updateReactorDisplay();
+      showToast(`⏱️ Timer set to ${newMins} minutes`);
+    }
+
+    function toggleFocusEngine() {
+      timerRunning = !timerRunning;
+      const startIcon = document.getElementById('mainStartIcon');
+      const startLabel = document.getElementById('mainStartLabel');
+      const stateLabel = document.getElementById('reactorStateLabel');
+      const reactorBox = document.getElementById('reactorContainer');
+
+      if (timerRunning) {
+        startIcon.textContent = '⏸';
+        startLabel.textContent = 'PAUSE SESSION';
+        stateLabel.textContent = currentMode === 'flow' ? 'FLOW STATE ACTIVE' : 'DEEP WORK ACTIVE';
+        reactorBox.classList.add('reactor-running');
+
+        timerInterval = setInterval(() => {
+          if (currentMode === 'flow') {
+            elapsedFlowSeconds++;
+            updateReactorDisplay();
+          } else {
+            if (remainingSeconds > 0) {
+              remainingSeconds--;
+              updateReactorDisplay();
+            } else {
+              recordCompletedSession(targetMinutes);
+            }
+          }
+        }, 1000);
+      } else {
+        clearInterval(timerInterval);
+        startIcon.textContent = '▶';
+        startLabel.textContent = 'RESUME FOCUS';
+        stateLabel.textContent = 'SESSION PAUSED';
+        reactorBox.classList.remove('reactor-running');
+      }
+    }
+
+    function resetFocusEngine() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      remainingSeconds = totalSeconds;
+      elapsedFlowSeconds = 0;
+      document.getElementById('mainStartIcon').textContent = '▶';
+      document.getElementById('mainStartLabel').textContent = 'START FOCUS SPRINT';
+      document.getElementById('reactorStateLabel').textContent = 'READY TO LOCK IN';
+      document.getElementById('reactorContainer').classList.remove('reactor-running');
+      updateReactorDisplay();
+    }
+
+    function completeSprintEarly() {
+      const workedMins = currentMode === 'flow'
+        ? Math.max(1, Math.round(elapsedFlowSeconds / 60))
+        : Math.max(1, Math.round((totalSeconds - remainingSeconds) / 60) || targetMinutes);
+      recordCompletedSession(workedMins);
+    }
+
+    function recordCompletedSession(mins) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      const xpEarned = mins >= 25 ? 50 : 25;
+      const lockedTask = document.getElementById('lockedTaskSelect').value || 'Deep Work Sprint';
+      const nowStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+      focusLogs.unshift({
+        id: Date.now(),
+        task: lockedTask,
+        minutes: mins,
+        xp: xpEarned,
+        time: nowStr
+      });
+      localStorage.setItem('xyrox_focus_logs', JSON.stringify(focusLogs));
+      addXP(xpEarned);
+      resetFocusEngine();
+      showToast(`🏆 ${mins}m Focus Logged! +${xpEarned} XP Earned!`);
+    }
+
+    function clearFocusHistory() {
+      focusLogs = [];
+      localStorage.setItem('xyrox_focus_logs', '[]');
+      syncSharedState();
+      showToast('🗑️ Session log cleared');
+    }
+
+    function toggleZenMode() {
+      document.body.classList.toggle('zen-mode');
+      const isZen = document.body.classList.contains('zen-mode');
+      const zenBar = document.getElementById('zenExitBar');
+      if (isZen) {
+        zenBar.classList.remove('hidden');
+        zenBar.classList.add('flex');
+        showToast('🖥️ Zen Desk Mode Active (Press Z to exit)');
+      } else {
+        zenBar.classList.add('hidden');
+        zenBar.classList.remove('flex');
+      }
+    }
+
+    /* 4. 5-CHANNEL LAYERABLE WEB AUDIO SYNTH STUDIO */
+    let audioCtx = null;
+    const channels = {};
+    const channelLevels = { brown: 0, rain: 0, gamma: 0, drone: 0, fire: 0 };
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function buildSoundChannel(type) {
+      ensureAudioContext();
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0;
+      gainNode.connect(audioCtx.destination);
+
+      if (type === 'gamma') {
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.value = 140;
+        osc2.frequency.value = 180; // 40Hz Gamma difference
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        osc1.start();
+        osc2.start();
+        return { gainNode };
+      }
+
+      if (type === 'drone') {
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        osc1.type = 'triangle';
+        osc2.type = 'sine';
+        osc1.frequency.value = 65.41; // C2 deep sub pad
+        osc2.frequency.value = 98.00; // G2 fifth harmonic
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 240;
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gainNode);
+        osc1.start();
+        osc2.start();
+        return { gainNode };
+      }
+
+      // Procedural Noise Buffers for Brown, Rain, and Fire
+      const bufferSize = audioCtx.sampleRate * 3;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let lastOut = 0.0;
+
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        if (type === 'brown') {
+          data[i] = (lastOut + (0.02 * white)) / 1.02;
+          lastOut = data[i];
+          data[i] *= 2.8;
+        } else if (type === 'rain') {
+          data[i] = white * 0.45;
+        } else if (type === 'fire') {
+          const crackle = Math.random() > 0.996 ? (Math.random() * 2 - 1) * 3.0 : 0;
+          lastOut = (lastOut + (0.03 * white)) / 1.03;
+          data[i] = (lastOut * 1.4) + crackle * 0.35;
+        }
+      }
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      if (type === 'rain') {
+        const bandpass = audioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 1100;
+        bandpass.Q.value = 0.7;
+        source.connect(bandpass);
+        bandpass.connect(gainNode);
+      } else {
+        source.connect(gainNode);
+      }
+
+      source.start();
+      return { gainNode };
+    }
+
+    function updateChannelVolume(type, val) {
+      const numeric = parseInt(val, 10) || 0;
+      channelLevels[type] = numeric;
+      document.getElementById(`val-${type}`).textContent = `${numeric}%`;
+
+      if (numeric > 0 && !channels[type]) {
+        channels[type] = buildSoundChannel(type);
+      }
+      if (channels[type]) {
+        const maxScale = (type === 'gamma' || type === 'drone') ? 0.12 : 0.35;
+        channels[type].gainNode.gain.setTargetAtTime((numeric / 100) * maxScale, audioCtx.currentTime, 0.05);
+      }
+
+      const anyActive = Object.values(channelLevels).some(v => v > 0);
+      document.getElementById('visualizerIdleTag').style.opacity = anyActive ? '0' : '1';
+    }
+
+    function silenceAllChannels() {
+      Object.keys(channelLevels).forEach(type => {
+        const slider = document.getElementById(`slider-${type}`);
+        if (slider) slider.value = 0;
+        updateChannelVolume(type, 0);
+      });
+      showToast('🔇 All sound channels muted');
+    }
+
+    function applyMixPreset(preset) {
+      const presets = {
+        code: { brown: 65, rain: 25, gamma: 0, drone: 40, fire: 0 },
+        rainy: { brown: 25, rain: 75, gamma: 0, drone: 0, fire: 45 },
+        neural: { brown: 45, rain: 0, gamma: 55, drone: 35, fire: 0 }
+      };
+      const target = presets[preset];
+      if (!target) return;
+      Object.keys(target).forEach(type => {
+        const slider = document.getElementById(`slider-${type}`);
+        if (slider) slider.value = target[type];
+        updateChannelVolume(type, target[type]);
+      });
+      showToast('🎧 Soundscape preset activated!');
+    }
+
+    /* Live Audio Spectrum Visualizer Canvas */
+    (function initAudioVisualizer() {
+      const vCanvas = document.getElementById('audioVisualizerCanvas');
+      const vCtx = vCanvas.getContext('2d');
+      let phase = 0;
+
+      function drawSpectrum() {
+        const w = vCanvas.width = vCanvas.clientWidth;
+        const h = vCanvas.height = vCanvas.clientHeight;
+        vCtx.clearRect(0, 0, w, h);
+
+        const totalEnergy = Object.values(channelLevels).reduce((a, b) => a + b, 0) / 250;
+        if (totalEnergy > 0.01) {
+          phase += 0.08;
+          const bars = 38;
+          const barW = (w / bars) - 3;
+          for (let i = 0; i < bars; i++) {
+            const wave = Math.sin(i * 0.35 + phase) * Math.cos(i * 0.15 - phase * 0.7);
+            const barH = Math.max(4, Math.min(h - 6, Math.abs(wave) * h * Math.min(1.1, totalEnergy)));
+            const x = i * (barW + 3) + 4;
+            const y = (h - barH) / 2;
+
+            vCtx.fillStyle = i % 2 === 0 ? '#38bdf8' : '#6366f1';
+            vCtx.beginPath();
+            vCtx.roundRect(x, y, barW, barH, 4);
+            vCtx.fill();
+          }
+        }
+        requestAnimationFrame(drawSpectrum);
+      }
+      drawSpectrum();
+    })();
+
+    /* 5. SHORTCUTS & TOAST */
+    function openShortcutsModal() {
+      document.getElementById('shortcutsModal').classList.remove('hidden');
+      document.getElementById('shortcutsModal').classList.add('flex');
+    }
+    function closeShortcutsModal() {
+      document.getElementById('shortcutsModal').classList.add('hidden');
+      document.getElementById('shortcutsModal').classList.remove('flex');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        if (e.key === 'Escape') closeTaskModal();
+        return;
+      }
+      if (e.key === ' ' || e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFocusEngine(); }
+      if (e.key.toLowerCase() === 'z') { e.preventDefault(); toggleZenMode(); }
+      if (e.key.toLowerCase() === 'n') { e.preventDefault(); openTaskModal(); }
+      if (e.key.toLowerCase() === 'm') { e.preventDefault(); toggleSidebar(); }
+      if (e.key.toLowerCase() === 't') { e.preventDefault(); themeToggleBtn.click(); }
+      if (e.key === 'Escape') { closeTaskModal(); closeShortcutsModal(); }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    /* 6. GOOGLE FIREBASE SIGN-IN ENGINE (WITH SAFARI REDIRECT SUPPORT) */
+    const DEFAULT_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAKi1ckZIFVxWHy51UBUW5juwjbxNrlcd8",
+      authDomain: "xyrox6789-17138.firebaseapp.com",
+      projectId: "xyrox6789-17138"
+    };
+
+    function initRealGoogleAuth() {
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
+        firebase.auth().getRedirectResult().catch(() => {});
+        firebase.auth().onAuthStateChanged((user) => {
+          const authSlot = document.getElementById("auth-slot");
+          if (!authSlot) return;
+
+          if (user) {
+            const realName = user.displayName || (user.email ? user.email.split("@")[0] : "Member");
+            const cleanHandle = realName.replace(/\s+/g, '').toLowerCase();
+            const avatarHtml = user.photoURL
+              ? `<img src="${user.photoURL}" class="w-5 h-5 rounded-full object-cover" />`
+              : `<div class="w-5 h-5 rounded-full bg-indigo-500 text-white font-bold text-[10px] flex items-center justify-center">${realName.charAt(0).toUpperCase()}</div>`;
+            
+            authSlot.innerHTML = `
+              <div onclick="firebase.auth().signOut()" class="flex items-center gap-2 cursor-pointer" title="Tap to Sign Out">
+                ${avatarHtml}
+                <span class="text-xs font-semibold truncate max-w-[110px]">@${cleanHandle}</span>
+              </div>
+            `;
+          } else {
+            authSlot.innerHTML = `
+              <button onclick="signInWithRealGoogle()" class="flex items-center gap-2 text-xs font-semibold hover:opacity-80 transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                <span>Sign In</span>
+              </button>
+            `;
+          }
+        });
+      } catch (err) { console.error("Firebase Auth Error:", err); }
+    }
+
+    function signInWithRealGoogle() {
+      if (!firebase.apps.length) firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      
+      auth.signInWithPopup(provider).catch((error) => {
+        if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
+          auth.signInWithRedirect(provider);
+        } else {
+          alert("Sign-In Error: " + error.message);
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", initRealGoogleAuth);
+  </script>
+</body>
+</html>
